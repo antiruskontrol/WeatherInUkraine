@@ -51,5 +51,7 @@
 ## 📄 License
 This project is open-source and available under the [MIT License](LICENSE).
 
-🔗 **Посилання на демо-версію (Сайт проєкту):** [Відкрити погодну карту]([https://github.io](https://antiruskontrol.github.io/WeaherinUkraine/))
-📧 **Зворотний зв'язок / Контакти:** [напишіть мені листа](mailto:antiruskontrol@ukr.net)
+🔗 **Посилання на демо-версію (Сайт проєкту):** [Відкрити погодну карту](https://github.io)
+
+📧 **Contact Email:** [send an email to developer](mailto:antiruskontrol@ukr.net)
+
