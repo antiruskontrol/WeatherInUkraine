@@ -1,0 +1,485 @@
+<!--
+===================================================================
+Версія:       1.3.0 (WeatherScope Pro)
+Дата, час:    2026-10-07 16:14
+Розробник:    Афтіпа Марко Оцтович
+-------------------------------------------------------------------
+Зміни 1.3.0 відносно 1.2.1:
+ 1. Випадаюче меню "Оберіть місто": обласні центри та великі міста всіх областей (групи за областями).
+ 2. Пошук будь-якого іншого міста/села України за назвою (Enter) через геокодер Open-Meteo.
+ 3. Вибране місто запам'ятовується (localStorage); заголовок, title і дані оновлюються автоматично.
+ 4. Дебаг-принти: вибір міста, пошук, збереження/відновлення.
+
+Зміни 1.2.1 відносно 1.2.0:
+ 0. Заголовки блоків без нумерації: "Оберіть роки для порівняння", "Оберіть погодний параметр".
+
+Зміни 1.2.0 відносно 1.1.2:
+ 1. Додано параметри: мінімальна та середня температура.
+ 2. Кнопка "Оновити графік" у стилі списку параметрів.
+ 3. Усі кнопки/списки/роки при наведенні світяться синім неоном зовні.
+ 4. Виправлено прозорість кольорів (rgb + 'cc' -> rgba).
+ 5. 29 лютого пропускається: дати високосних років більше не зсуваються.
+ 6. Скролбар під графіком тепер перетягується (і реагує на клік).
+ 7. Завантажувач: читабельний колір тексту.
+ 8. Назва міста винесена в CITY (title і h1 оновлюються автоматично).
+ 9. Дебаг-принти в консоль з описом маркера (що спричинило спрацювання).
+===================================================================
+-->
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Порівняння погоди в містах України по днях</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <style>
+        :root { --neon: #3b82f6; --neon-glow: 0 0 6px #3b82f6, 0 0 18px rgba(59,130,246,.65); }
+        body { background:#111827; color:#f3f4f6; font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; margin:0; padding:24px; display:flex; justify-content:center; }
+        .container { max-width:1100px; width:100%; background:#1f2937; border:1px solid #374151; border-radius:12px; padding:24px; box-shadow:0 10px 25px -5px rgba(0,0,0,.3); }
+        h1 { color:#60a5fa; text-align:center; margin:0 0 24px; font-size:24px; }
+        .controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:24px; border-bottom:1px solid #374151; padding-bottom:24px; margin-bottom:24px; }
+        label.control-title { display:block; font-size:14px; font-weight:500; margin-bottom:8px; color:#d1d5db; }
+        .grid-years { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+        .year-item { display:flex; align-items:center; gap:8px; background:#1f2937; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:14px; user-select:none; border:1px solid #374151; transition:all .2s ease; }
+        .year-item:hover { background:#374151; border-color:var(--neon); box-shadow:var(--neon-glow); }
+        .year-item.highlighted { background:#374151; border-color:var(--year-color,#3b82f6); box-shadow:0 0 10px var(--year-color,#3b82f6); transform:scale(1.03); }
+        .year-item.dimmed { opacity:.35; }
+        .year-checkbox { appearance:none; -webkit-appearance:none; width:16px; height:16px; background:#0b0f19; border:1.5px solid #4b5563; border-radius:4px; outline:none; cursor:pointer; position:relative; transition:all .2s ease-in-out; }
+        .year-checkbox:checked { background:#000; border-color:var(--year-color,#3b82f6); box-shadow:0 0 8px var(--year-color,#3b82f6); }
+        .year-checkbox:checked::after { content:''; position:absolute; left:4px; top:1px; width:4px; height:8px; border:solid var(--year-color,#3b82f6); border-width:0 2px 2px 0; transform:rotate(45deg); }
+
+        /* Єдиний стиль для списку параметрів і кнопки "Оновити графік" */
+        select, #fetchDataBtn { width:100%; box-sizing:border-box; height:42px; background:#374151; border:1px solid #4b5563; color:#fff; padding:0 12px; border-radius:6px; font-size:14px; font-family:inherit; outline:none; cursor:pointer; transition:box-shadow .2s, border-color .2s, background-color .2s; }
+        #fetchDataBtn { font-weight:500; margin-top:22px; }
+        select:hover, select:focus, #fetchDataBtn:hover, #fetchDataBtn:focus-visible, .reset-zoom-btn:hover { border-color:var(--neon); box-shadow:var(--neon-glow); }
+        #fetchDataBtn:hover { background:#374151; }
+
+        #citySearch { width:100%; box-sizing:border-box; height:42px; margin-top:8px; background:#1f2937; border:1px solid #4b5563; color:#fff; padding:0 12px; border-radius:6px; font-size:14px; font-family:inherit; outline:none; transition:box-shadow .2s, border-color .2s; }
+        #citySearch:hover, #citySearch:focus { border-color:var(--neon); box-shadow:var(--neon-glow); }
+        #citySearch::placeholder { color:#9ca3af; }
+        #cityHint { font-size:12px; color:#9ca3af; margin-top:6px; min-height:16px; }
+        .chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:12px; }
+        .reset-zoom-btn { background:#374151; color:#9ca3af; border:1px solid #4b5563; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:box-shadow .2s, border-color .2s, color .2s; }
+        .reset-zoom-btn:hover { color:#fff; }
+        .chart-wrapper { position:relative; width:100%; height:480px; background:#030712; border:1px solid #374151; border-radius:8px 8px 0 0; padding:16px; box-sizing:border-box; overflow:hidden; }
+        .scrollbar-container { width:100%; height:14px; background:#111827; border:1px solid #374151; border-top:none; border-radius:0 0 8px 8px; position:relative; overflow:hidden; cursor:pointer; touch-action:none; }
+        .scrollbar-thumb { position:absolute; height:100%; width:100%; background:#3b82f6; border-radius:4px; cursor:grab; opacity:.55; transition:opacity .2s, box-shadow .2s; touch-action:none; }
+        .scrollbar-thumb:hover, .scrollbar-thumb.dragging { opacity:1; box-shadow:var(--neon-glow); }
+        .scrollbar-thumb.dragging { cursor:grabbing; }
+        .loader { position:absolute; inset:0; background:rgba(3,7,18,.85); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:16px; color:#93c5fd; border-radius:8px; z-index:10; }
+        .hidden { display:none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Порівняльний аналіз клімату (<span id="cityName">Київ</span>)</h1>
+
+        <div class="controls">
+            <div>
+                <label class="control-title">Оберіть роки для порівняння</label>
+                <div class="grid-years" id="yearsContainer"></div>
+            </div>
+            <div>
+                <label class="control-title" for="citySelect">Оберіть місто</label>
+                <select id="citySelect"></select>
+                <input type="text" id="citySearch" placeholder="Немає у списку? Введіть назву й натисніть Enter" autocomplete="off">
+                <div id="cityHint"></div>
+            </div>
+            <div>
+                <label class="control-title" for="metricSelect">Оберіть погодний параметр</label>
+                <select id="metricSelect">
+                    <option value="precipitation_sum">Кількість опадів (мм) [Стовпчики]</option>
+                    <option value="wind_speed_10m_max">Максимальна швидкість вітру (км/год) [Лінія]</option>
+                    <option value="temperature_2m_max" selected>Максимальна температура (°C) [Лінія]</option>
+                    <option value="temperature_2m_min">Мінімальна температура (°C) [Лінія]</option>
+                    <option value="temperature_2m_mean">Середня температура (°C) [Лінія]</option>
+                </select>
+            </div>
+            <div>
+                <button type="button" id="fetchDataBtn">Оновити графік</button>
+            </div>
+        </div>
+
+        <div class="chart-header">
+            <span style="font-size:12px; color:hsl(268,54%,72%);">💡 Колесо миші — масштаб, затисніть графік або повзунок внизу — прокрутка. 29 лютого пропущено, щоб дати збігалися.</span>
+            <button type="button" id="resetZoomBtn" class="reset-zoom-btn">🔍 Скинути масштаб</button>
+        </div>
+
+        <div class="chart-wrapper">
+            <div id="loader" class="hidden loader">🔄 Завантаження історичних даних з сервера Open-Meteo...</div>
+            <canvas id="weatherChart"></canvas>
+        </div>
+        <div class="scrollbar-container" id="scrollBarContainer">
+            <div class="scrollbar-thumb" id="scrollBarThumb"></div>
+        </div>
+    </div>
+
+    <script>
+        var CITY = { name: 'Київ', lat: '50.4501', lon: '30.5234' };
+        var DEBUG = true;
+        function dbg(marker, info) { if (DEBUG) console.log('[WeatherScope][' + marker + ']', info === undefined ? '' : info); }
+
+        function setCity(city, reason) {
+            CITY = city;
+            document.getElementById('cityName').textContent = city.name;
+            document.title = 'Порівняння погоди: ' + city.name + ' по днях';
+            dbg('setCity', 'причина: ' + reason + ' -> ' + city.name + ' (' + city.lat + ', ' + city.lon + ')');
+        }
+
+
+        // ---------- Міста: "Назва:широта,довгота" ----------
+        var CITIES = {
+            'Київ': 'Київ:50.45,30.52',
+            'АР Крим і Севастополь': 'Сімферополь:44.95,34.10;Севастополь:44.62,33.52;Ялта:44.50,34.17;Керч:45.36,36.47;Євпаторія:45.20,33.37;Феодосія:45.03,35.38',
+            'Вінницька': 'Вінниця:49.23,28.47;Жмеринка:49.04,28.11;Могилів-Подільський:48.45,27.80;Хмільник:49.56,27.97;Гайсин:48.81,29.38',
+            'Волинська': 'Луцьк:50.75,25.33;Ковель:51.22,24.71;Нововолинськ:50.73,24.16',
+            'Дніпропетровська': 'Дніпро:48.46,35.05;Кривий Ріг:47.91,33.39;Кам\'янське:48.51,34.60;Нікополь:47.57,34.40;Павлоград:48.53,35.87;Покров:47.65,34.12;Марганець:47.64,34.63',
+            'Донецька': 'Донецьк:48.00,37.80;Краматорськ:48.72,37.56;Слов\'янськ:48.87,37.62;Маріуполь:47.10,37.54;Бахмут:48.59,38.00;Покровськ:48.28,37.18;Костянтинівка:48.53,37.71',
+            'Житомирська': 'Житомир:50.25,28.66;Бердичів:49.90,28.60;Коростень:50.95,28.64;Новоград-Волинський:50.59,27.62',
+            'Закарпатська': 'Ужгород:48.62,22.30;Мукачево:48.44,22.72;Хуст:48.18,23.30;Берегове:48.20,22.64',
+            'Запорізька': 'Запоріжжя:47.84,35.14;Мелітополь:46.84,35.37;Бердянськ:46.76,36.80;Енергодар:47.50,34.65',
+            'Івано-Франківська': 'Івано-Франківськ:48.92,24.71;Калуш:49.04,24.37;Коломия:48.53,25.04;Яремче:48.45,24.55',
+            'Київська': 'Біла Церква:49.80,30.12;Бровари:50.51,30.79;Бориспіль:50.35,30.95;Ірпінь:50.52,30.25;Буча:50.55,30.21;Вишгород:50.58,30.49;Фастів:50.08,29.92;Васильків:50.18,30.32;Обухів:50.11,30.62;Славутич:51.52,30.75',
+            'Кіровоградська': 'Кропивницький:48.51,32.26;Олександрія:48.67,33.12;Знам\'янка:48.72,32.67',
+            'Луганська': 'Луганськ:48.57,39.31;Сєвєродонецьк:48.95,38.49;Лисичанськ:48.91,38.44;Алчевськ:48.47,38.80',
+            'Львівська': 'Львів:49.84,24.03;Дрогобич:49.35,23.51;Червоноград:50.39,24.23;Стрий:49.26,23.85;Борислав:49.29,23.43;Трускавець:49.28,23.51',
+            'Миколаївська': 'Миколаїв:46.97,32.00;Первомайськ:48.04,30.85;Вознесенськ:47.57,31.33;Южноукраїнськ:47.82,31.18',
+            'Одеська': 'Одеса:46.48,30.73;Ізмаїл:45.35,28.84;Чорноморськ:46.30,30.66;Подільськ:47.75,29.53;Білгород-Дністровський:46.19,30.35',
+            'Полтавська': 'Полтава:49.59,34.55;Кременчук:49.07,33.42;Лубни:50.02,32.99;Миргород:49.97,33.61',
+            'Рівненська': 'Рівне:50.62,26.25;Дубно:50.40,25.74;Вараш:51.35,25.85;Костопіль:50.88,26.45',
+            'Сумська': 'Суми:50.91,34.80;Конотоп:51.24,33.20;Шостка:51.87,33.48;Охтирка:50.31,34.90',
+            'Тернопільська': 'Тернопіль:49.55,25.59;Чортків:49.02,25.80;Кременець:50.10,25.73',
+            'Харківська': 'Харків:49.99,36.23;Ізюм:49.21,37.26;Куп\'янськ:49.71,37.62;Лозова:48.89,36.32;Чугуїв:49.84,36.69',
+            'Херсонська': 'Херсон:46.64,32.62;Нова Каховка:46.76,33.37;Каховка:46.82,33.48',
+            'Хмельницька': 'Хмельницький:49.42,26.99;Кам\'янець-Подільський:48.68,26.58;Шепетівка:50.18,27.06;Нетішин:50.34,26.64',
+            'Черкаська': 'Черкаси:49.44,32.06;Умань:48.75,30.22;Сміла:49.22,31.89;Канів:49.75,31.47',
+            'Чернівецька': 'Чернівці:48.29,25.94;Хотин:48.52,26.50;Новодністровськ:48.58,27.44',
+            'Чернігівська': 'Чернігів:51.49,31.29;Ніжин:51.05,31.89;Прилуки:50.59,32.39;Новгород-Сіверський:51.99,33.26'
+        };
+        var FOUND_GROUP = 'Знайдені за пошуком';
+        var citySelect = document.getElementById('citySelect');
+        var cityHint = document.getElementById('cityHint');
+
+        function addCityOption(name, lat, lon, groupLabel) {
+            var g = Array.from(citySelect.querySelectorAll('optgroup')).find(function(x) { return x.label === groupLabel; });
+            if (!g) { g = document.createElement('optgroup'); g.label = groupLabel; citySelect.appendChild(g); }
+            var o = document.createElement('option');
+            o.value = lat + ',' + lon;
+            o.textContent = name;
+            g.appendChild(o);
+            return o;
+        }
+
+        function applyCityFromSelect(reason) {
+            var o = citySelect.options[citySelect.selectedIndex], pr = o.value.split(',');
+            setCity({ name: o.textContent, lat: pr[0], lon: pr[1] }, reason);
+            try { localStorage.setItem('weatherscope_city', JSON.stringify(CITY)); dbg('city', 'збережено вибір у localStorage'); }
+            catch (e) { dbg('city', 'маркер: localStorage недоступний (' + e.message + ')'); }
+        }
+
+        function initCities() {
+            Object.keys(CITIES).forEach(function(group) {
+                CITIES[group].split(';').forEach(function(item) {
+                    var a = item.split(':'), c = a[1].split(',');
+                    addCityOption(a[0], c[0], c[1], group);
+                });
+            });
+            var start = CITY;
+            try {
+                var saved = JSON.parse(localStorage.getItem('weatherscope_city') || 'null');
+                if (saved && saved.name && saved.lat && saved.lon) { start = saved; dbg('city', 'маркер: відновлено збережене місто ' + saved.name); }
+            } catch (e) { dbg('city', 'маркер: не вдалося прочитати localStorage (' + e.message + ')'); }
+            var val = start.lat + ',' + start.lon;
+            var opt = Array.from(citySelect.options).find(function(o) { return o.value === val; });
+            if (!opt) opt = addCityOption(start.name, start.lat, start.lon, FOUND_GROUP);
+            opt.selected = true;
+            applyCityFromSelect('початкове значення');
+        }
+
+        async function searchCity(q) {
+            dbg('citySearch', 'маркер: Enter у полі пошуку, запит "' + q + '"');
+            cityHint.textContent = 'Пошук...';
+            try {
+                var r = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(q) + '&count=10&language=uk&countryCode=UA&format=json');
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                var res = (await r.json()).results || [];
+                dbg('citySearch', 'знайдено: ' + res.length);
+                if (!res.length) { cityHint.textContent = 'Нічого не знайдено за запитом "' + q + '".'; return; }
+                var first = null;
+                res.forEach(function(f) {
+                    var o = addCityOption(f.name + (f.admin1 ? ' (' + f.admin1 + ')' : ''), f.latitude, f.longitude, FOUND_GROUP);
+                    if (!first) first = o;
+                });
+                first.selected = true;
+                cityHint.textContent = res.length > 1 ? 'Знайдено збігів: ' + res.length + '. Інші варіанти — у списку, група «' + FOUND_GROUP + '».' : '';
+                applyCityFromSelect('пошук "' + q + '"');
+                loadWeatherData('обрано місто з пошуку: ' + CITY.name);
+            } catch (e) {
+                console.error('[WeatherScope][error]', e);
+                cityHint.textContent = 'Помилка пошуку: ' + e.message;
+            }
+        }
+
+        citySelect.addEventListener('change', function() {
+            applyCityFromSelect('змінено місто у списку');
+            loadWeatherData('змінено місто: ' + CITY.name);
+        });
+        document.getElementById('citySearch').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) searchCity(this.value.trim());
+        });
+
+        var colors = [
+            'rgb(59, 130, 246)',   // 2018 - синій
+            'rgb(250, 204, 21)',   // 2019 - лимонний
+            'rgb(239, 68, 68)',    // 2020 - червоний
+            'rgb(139, 92, 246)',   // 2021 - фіолетовий
+            'rgb(236, 72, 153)',   // 2022 - рожевий
+            'rgb(20, 184, 166)',   // 2023 - бірюзовий
+            'rgb(34, 197, 94)',    // 2024 - зелений
+            'rgb(245, 158, 11)',   // 2025 - помаранчевий
+            'rgb(255, 255, 255)'   // 2026 - білий
+        ];
+
+        // rgb(r, g, b) -> rgba(r, g, b, a)
+        function withAlpha(rgb, a) { return rgb.replace('rgb(', 'rgba(').replace(')', ', ' + a + ')'); }
+
+        var yearsContainer = document.getElementById('yearsContainer');
+        var startYear = 2018, endYear = 2026;
+        for (var year = startYear, ci = 0; year <= endYear; year++, ci++) {
+            var label = document.createElement('label');
+            label.className = 'year-item';
+            label.setAttribute('data-year', year);
+            var checked = (year === 2023 || year === 2025 || year === 2026) ? 'checked' : '';
+            var yc = colors[ci % colors.length];
+            label.style.setProperty('--year-color', yc);
+            label.innerHTML = '<input type="checkbox" value="' + year + '" class="year-checkbox" style="--year-color:' + yc + ';" ' + checked + '> <span>' + year + '</span>';
+            yearsContainer.appendChild(label);
+        }
+
+        var weatherChart = null;
+
+        function highlightYearInList(targetYear) {
+            document.querySelectorAll('.year-item').forEach(function(item) {
+                var y = item.getAttribute('data-year');
+                if (targetYear && y === targetYear.toString()) { item.classList.add('highlighted'); item.classList.remove('dimmed'); }
+                else if (targetYear) { item.classList.remove('highlighted'); item.classList.add('dimmed'); }
+                else { item.classList.remove('highlighted', 'dimmed'); }
+            });
+        }
+
+        // Осі X: 365 днів (2023 не високосний), 29 лютого не використовується
+        function generateYearLabels() {
+            var labels = [], months = ['Січ','Лют','Бер','Квіт','Трав','Черв','Лип','Серп','Верес','Жовт','Лист','Груд'];
+            var date = new Date(2023, 0, 1);
+            while (date.getFullYear() === 2023) { labels.push(date.getDate() + ' ' + months[date.getMonth()]); date.setDate(date.getDate() + 1); }
+            return labels;
+        }
+
+        // ---------- Скролбар ----------
+        var thumb = document.getElementById('scrollBarThumb');
+        var track = document.getElementById('scrollBarContainer');
+
+        function updateScrollbar() {
+            if (!weatherChart) return;
+            var xs = weatherChart.scales.x;
+            var total = weatherChart.data.labels.length - 1;
+            var vis = Math.max(1, xs.max - xs.min);
+            var w = Math.min(100, Math.max(5, (vis / total) * 100));
+            var l = Math.min(100 - w, Math.max(0, (xs.min / total) * 100));
+            thumb.style.width = w + '%';
+            thumb.style.left = l + '%';
+        }
+
+        function scrollChartTo(newMin, reason) {
+            if (!weatherChart) return;
+            var xs = weatherChart.scales.x;
+            var total = weatherChart.data.labels.length - 1;
+            var vis = xs.max - xs.min;
+            newMin = Math.round(Math.min(total - vis, Math.max(0, newMin)));
+            dbg('scrollbar', reason + ': видимий діапазон ' + newMin + '..' + Math.round(newMin + vis));
+            weatherChart.zoomScale('x', { min: newMin, max: newMin + vis }, 'none');
+            updateScrollbar();
+        }
+
+        var drag = null;
+        thumb.addEventListener('pointerdown', function(e) {
+            if (!weatherChart) return;
+            e.stopPropagation();
+            drag = { startX: e.clientX, startMin: weatherChart.scales.x.min };
+            thumb.classList.add('dragging');
+            thumb.setPointerCapture(e.pointerId);
+            dbg('scrollbar', 'маркер: початок перетягування повзунка');
+        });
+        thumb.addEventListener('pointermove', function(e) {
+            if (!drag) return;
+            var total = weatherChart.data.labels.length - 1;
+            scrollChartTo(drag.startMin + ((e.clientX - drag.startX) / track.clientWidth) * total, 'перетягування');
+        });
+        function endDrag() { if (drag) { drag = null; thumb.classList.remove('dragging'); dbg('scrollbar', 'маркер: кінець перетягування'); } }
+        thumb.addEventListener('pointerup', endDrag);
+        thumb.addEventListener('pointercancel', endDrag);
+        track.addEventListener('pointerdown', function(e) {
+            if (e.target === thumb || !weatherChart) return;
+            var rect = track.getBoundingClientRect();
+            var total = weatherChart.data.labels.length - 1;
+            var vis = weatherChart.scales.x.max - weatherChart.scales.x.min;
+            scrollChartTo(((e.clientX - rect.left) / rect.width) * total - vis / 2, 'клік по доріжці');
+        });
+
+        // ---------- Завантаження даних ----------
+        async function loadWeatherData(reason) {
+            dbg('load', 'маркер спрацювання: ' + reason);
+            var selectedYears = Array.from(document.querySelectorAll('.year-checkbox:checked')).map(function(cb) { return cb.value; });
+            var metricEl = document.getElementById('metricSelect');
+            var selectedMetric = metricEl.value;
+            var metricLabel = metricEl.options[metricEl.selectedIndex].text;
+
+            if (selectedYears.length === 0) {
+                dbg('load', 'маркер: жоден рік не обраний');
+                alert('Будь ласка, оберіть хоча б один рік!');
+                return;
+            }
+
+            document.getElementById('loader').classList.remove('hidden');
+            var datasets = [];
+            var labelsX = generateYearLabels();
+            var chartType = (selectedMetric === 'precipitation_sum') ? 'bar' : 'line';
+            var today = new Date();
+            var todayStr = today.toISOString().split('T')[0];
+
+            try {
+                for (var i = 0; i < selectedYears.length; i++) {
+                    var currentYear = parseInt(selectedYears[i]);
+                    var startDate = currentYear + '-01-01';
+                    var endDate = currentYear + '-12-31';
+                    if (currentYear >= today.getFullYear()) endDate = (todayStr < endDate) ? todayStr : endDate;
+
+                    var url = 'https://archive-api.open-meteo.com/v1/archive?latitude=' + CITY.lat + '&longitude=' + CITY.lon + '&start_date=' + startDate + '&end_date=' + endDate + '&daily=' + selectedMetric + '&timezone=auto';
+                    dbg('fetch', url);
+
+                    var response = await fetch(url, { mode: 'cors' }).catch(function() { throw new Error('Мережева помилка або блокування запиту.'); });
+                    if (!response.ok) throw new Error('Помилка сервера при отриманні даних за ' + currentYear + ' рік.');
+                    var data = await response.json();
+
+                    var times = data.daily.time || [], vals = data.daily[selectedMetric] || [], dailyData = [];
+                    for (var j = 0; j < times.length; j++) {
+                        if (times[j].slice(5) === '02-29') { dbg('leap', 'маркер: пропущено ' + times[j]); continue; }
+                        dailyData.push(vals[j]);
+                    }
+                    dbg('data', currentYear + ': отримано ' + vals.length + ' днів, у графіку ' + dailyData.length);
+
+                    var mainColor = colors[(currentYear - startYear) % colors.length];
+                    datasets.push({
+                        label: currentYear.toString(),
+                        data: dailyData,
+                        borderColor: mainColor,
+                        backgroundColor: chartType === 'bar' ? withAlpha(mainColor, 0.8) : withAlpha(mainColor, 0.08),
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: mainColor,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1,
+                        tension: 0.15,
+                        clip: false
+                    });
+                }
+
+                if (weatherChart) weatherChart.destroy();
+
+                var ctx = document.getElementById('weatherChart').getContext('2d');
+                weatherChart = new Chart(ctx, {
+                    type: chartType,
+                    data: { labels: labelsX, datasets: datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'nearest', intersect: false },
+                        onHover: function(event, active) {
+                            if (active && active.length > 0) highlightYearInList(weatherChart.data.datasets[active[0].datasetIndex].label);
+                            else highlightYearInList(null);
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#e5e7eb', usePointStyle: true, pointStyle: 'circle',
+                                    generateLabels: function(chart) {
+                                        var original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                        var labels = original.call(this, chart);
+                                        labels.forEach(function(l) {
+                                            var ds = chart.data.datasets[l.datasetIndex];
+                                            l.fillStyle = ds.borderColor; l.strokeStyle = ds.borderColor; l.pointStyle = 'circle';
+                                        });
+                                        return labels;
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                enabled: true, mode: 'nearest', intersect: false,
+                                backgroundColor: 'rgba(17, 24, 39, 0.95)', borderColor: '#4b5563', borderWidth: 1,
+                                padding: 12, boxPadding: 6, usePointStyle: true, caretPadding: 12, caretSize: 8,
+                                animation: { duration: 100 },
+                                callbacks: {
+                                    title: function(items) { return items.length > 0 ? items[0].label : ''; },
+                                    afterBody: function(items) {
+                                        if (!items || items.length === 0) return [];
+                                        var a = items[0], lines = [];
+                                        a.chart.data.datasets.forEach(function(ds, idx) {
+                                            if (idx !== a.datasetIndex) {
+                                                var v = ds.data[a.dataIndex];
+                                                lines.push('  ' + ds.label + ': ' + ((v !== undefined && v !== null) ? v : '-'));
+                                            }
+                                        });
+                                        return lines;
+                                    },
+                                    labelTextColor: function() { return '#ffffff'; },
+                                    labelColor: function(ctx) {
+                                        var c = ctx.dataset.borderColor;
+                                        return { borderColor: c, backgroundColor: c, borderWidth: 1, borderRadius: 2 };
+                                    },
+                                    label: function(ctx) {
+                                        var v = ctx.raw !== undefined && ctx.raw !== null ? ctx.raw : '-';
+                                        return '▶ ' + ctx.dataset.label + ': ' + v + ' (активний)';
+                                    }
+                                }
+                            },
+                            zoom: {
+                                limits: { x: { minRange: 1 } },
+                                pan: { enabled: true, mode: 'x', onPan: updateScrollbar },
+                                zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x', onZoom: updateScrollbar }
+                            }
+                        },
+                        scales: {
+                            x: { offset: true, grid: { color: '#374151' }, ticks: { color: '#9ca3af', maxTicksLimit: 12 } },
+                            y: { grid: { color: '#374151' }, ticks: { color: '#9ca3af' }, title: { display: true, text: metricLabel, color: '#e5e7eb' } }
+                        }
+                    }
+                });
+                updateScrollbar();
+                dbg('chart', 'побудовано: ' + chartType + ', роки: ' + selectedYears.join(', ') + ', параметр: ' + selectedMetric);
+            } catch (error) {
+                console.error('[WeatherScope][error]', error);
+                alert(error.message);
+            } finally {
+                document.getElementById('loader').classList.add('hidden');
+            }
+        }
+
+        document.getElementById('weatherChart').addEventListener('mouseleave', function() { highlightYearInList(null); });
+        document.getElementById('resetZoomBtn').addEventListener('click', function() {
+            dbg('zoom', 'маркер: натиснуто "Скинути масштаб"');
+            if (weatherChart) { weatherChart.resetZoom(); updateScrollbar(); }
+        });
+        document.getElementById('metricSelect').addEventListener('change', function() { loadWeatherData('змінено параметр: ' + this.value); });
+        document.querySelectorAll('.year-checkbox').forEach(function(cb) {
+            cb.addEventListener('change', function() { loadWeatherData('рік ' + cb.value + (cb.checked ? ' увімкнено' : ' вимкнено')); });
+        });
+        document.getElementById('fetchDataBtn').addEventListener('click', function() { loadWeatherData('кнопка "Оновити графік"'); });
+
+        initCities();
+        loadWeatherData('первинне завантаження сторінки');
+    </script>
+</body>
+</html>
