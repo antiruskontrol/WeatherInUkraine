@@ -35,7 +35,9 @@
 
 **Weather In Ukraine** is an interactive web application designed for monitoring, comparing, and visualizing historical climate and weather data across various Ukrainian cities. 
 
-🔗 **Live Project Demo:** [Open Application Dashboard](https://github.io)
+🔗 **Live Project Demo:** 🎥 **Live Project Demo:**
+<video src="demo.mp4" controls="controls" width="100%" max-width="800px"></video>
+
 
 ### ✨ Key Features
 * 📊 **Interactive Charts:** High-performance linear charts visualizing temperature trends.
