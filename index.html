@@ -1,9 +1,46 @@
 <!--
 ===================================================================
-Версія:       1.3.0 (WeatherScope Pro)
-Дата, час:    2026-10-07 16:14
+Версія:       1.4.5 (WeatherScope Pro)
+Дата, час:    2026-10-07 22:36
 Розробник:    Афтіпа Марко Оцтович
 -------------------------------------------------------------------
+Зміни 1.4.5 відносно 1.4.4:
+ 1. Хмари на аватарці біля курсора тепер у стилі віджета: м'які об'ємні клуби з градієнтів
+    (темніший низ, світліший верх), напівпрозорі, без різких країв; повільно "плавають" на місці.
+    Для аватарки непрозорість вища (0.6; гроза 0.8), щоб хмарка читалась на 44 px.
+
+Зміни 1.4.4 відносно 1.4.3:
+ 1. Виправлено видимі лінії обрізки у хмар: градієнти "клубів" обрізались межами спрайта.
+    Тепер спрайт має запас (pad) з усіх боків, і краї хмар повністю розчиняються.
+ 2. Файл перейменовано: weather_in_ukraine.html (Weather in Ukraine, лише англійською).
+
+Зміни 1.4.3 відносно 1.4.2:
+ 1. Хмари у віджеті ледь помітні (прозорість ~10-20%, грозові трохи темніші).
+ 2. Реалістичні хмари: м'які об'ємні "клуби" з радіальними градієнтами (темніший низ, світліший верх),
+    різні розміри й швидкості (паралакс), легке "дихання" розміру та плавання по висоті.
+    Хмари малюються один раз у спрайти при зміні погоди (без навантаження на кожному кадрі).
+
+Зміни 1.4.2 відносно 1.4.1:
+ 1. Хмари у віджеті погоди пропливають через ВЕСЬ віджет: випливають зліва (прозорий градієнт),
+    пропливають під написом (місто, температура) і плавно зникають під прогнозом на 4 дні.
+    Дощ, сніг і блискавки малюються під хмарами з тим самим градієнтом. Сонце/місяць лишились зліва.
+ 2. Полотно віджета тепер на весь блок (адаптується до розміру через ResizeObserver).
+
+Зміни 1.4.1 відносно 1.4.0:
+ 1. Віджет погоди прозорий (без заливки; плитки днів теж прозорі, лишились тонкі рамки).
+ 2. Динамічний фон на всій сторінці працює завжди (не залежить від кнопки "Атмосфера"):
+    контейнер і графік напівпрозорі, хмари яскравіші; колір і швидкість залежать від
+    погоди ОБРАНОГО міста (сонце, хмарно, дощ, гроза, сніг, ніч). Кнопка "Атмосфера" керує лише звуком.
+
+Зміни 1.4.0 відносно 1.3.0:
+ 1. Верхня панель: дата/час/місто користувача, кнопка "Атмосфера" (звук + фон), версія; контент опущено нижче.
+ 2. Футер: підпис розробника та "Kyiv Ukraine 2026".
+ 3. Аватарка біля курсора: погода в місті КОРИСТУВАЧА (геолокація; запасний варіант - Київ).
+ 4. Власний динамічний віджет погоди для ОБРАНОГО міста (сонце/місяць, хмари, дощ, сніг, гроза з блискавками).
+ 5. Звуки через Web Audio для всіх сезонів (дощ, вітер, грім у стерео, птахи, цвіркуни) + вибір сезону й кнопка тестового грому.
+ 6. Динамічний прозорий фон "проліт крізь хмари" (вмикається разом з Атмосферою).
+ 7. Дебаг-принти: геолокація, погода, звук, грім, перемикання.
+
 Зміни 1.3.0 відносно 1.2.1:
  1. Випадаюче меню "Оберіть місто": обласні центри та великі міста всіх областей (групи за областями).
  2. Пошук будь-якого іншого міста/села України за назвою (Enter) через геокодер Open-Meteo.
@@ -30,7 +67,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Порівняння погоди в містах України по днях</title>
+    <title>Порівняння погоди в Києві по днях</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -60,10 +97,35 @@
         #citySearch:hover, #citySearch:focus { border-color:var(--neon); box-shadow:var(--neon-glow); }
         #citySearch::placeholder { color:#9ca3af; }
         #cityHint { font-size:12px; color:#9ca3af; margin-top:6px; min-height:16px; }
+        body { padding:64px 24px 24px; flex-direction:column; justify-content:flex-start; align-items:center; min-height:100vh; box-sizing:border-box; position:relative; }
+        .container { position:relative; z-index:1; background:rgba(31,41,55,.35); }
+        #bgCanvas { position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity:0; transition:opacity 1.2s; }
+        #flash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:90; }
+        #topbar { position:fixed; top:0; left:0; right:0; height:48px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px; padding:0 20px; z-index:50; font-size:13px; color:rgba(243,244,246,.62); pointer-events:none; }
+        #topbar > * { pointer-events:auto; }
+        #tbVer { text-align:right; }
+        .tb-center { display:flex; gap:8px; align-items:center; }
+        #topbar button, #topbar select { width:auto; height:32px; margin:0; padding:0 12px; font-size:12px; background:rgba(55,65,81,.55); border:1px solid rgba(75,85,99,.8); color:#f3f4f6; border-radius:6px; cursor:pointer; backdrop-filter:blur(4px); font-family:inherit; transition:box-shadow .2s, border-color .2s; }
+        #topbar button:hover, #topbar select:hover, #topbar button.on { border-color:var(--neon); box-shadow:var(--neon-glow); }
+        .wx { position:relative; overflow:hidden; display:flex; flex-wrap:wrap; align-items:center; gap:16px; background:transparent; border:1px solid rgba(75,85,99,.45); border-radius:8px; padding:12px 16px; margin-bottom:24px; }
+        #wxCanvas { position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+        .wx > div { position:relative; z-index:1; }
+        .wx-main { margin-left:170px; }
+        @media (max-width:700px) { .wx-main { margin-left:0; margin-top:100px; } }
+        .wx-title { font-size:13px; color:#9ca3af; }
+        .wx-temp { font-size:34px; font-weight:600; color:#f3f4f6; }
+        .wx-desc, .wx-meta { font-size:13px; color:#d1d5db; }
+        .wx-days { display:flex; gap:10px; margin-left:auto; flex-wrap:wrap; }
+        .wx-day { text-align:center; font-size:12px; color:#d1d5db; background:transparent; border:1px solid rgba(75,85,99,.45); border-radius:6px; padding:8px 10px; min-width:52px; }
+        #avatar { position:fixed; left:0; top:0; z-index:100; pointer-events:none; display:flex; align-items:center; gap:2px; opacity:0; transition:opacity .3s; }
+        #avatar canvas { width:44px; height:44px; }
+        #avLabel { font-size:11px; color:rgba(243,244,246,.6); white-space:nowrap; }
+        #siteFooter { margin-top:24px; text-align:center; font-size:13px; color:rgba(243,244,246,.55); line-height:1.6; position:relative; z-index:1; }
+        @media (hover:none) { #avatar { display:none; } }
         .chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:12px; }
         .reset-zoom-btn { background:#374151; color:#9ca3af; border:1px solid #4b5563; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:box-shadow .2s, border-color .2s, color .2s; }
         .reset-zoom-btn:hover { color:#fff; }
-        .chart-wrapper { position:relative; width:100%; height:480px; background:#030712; border:1px solid #374151; border-radius:8px 8px 0 0; padding:16px; box-sizing:border-box; overflow:hidden; }
+        .chart-wrapper { position:relative; width:100%; height:480px; background:rgba(3,7,18,.6); border:1px solid #374151; border-radius:8px 8px 0 0; padding:16px; box-sizing:border-box; overflow:hidden; }
         .scrollbar-container { width:100%; height:14px; background:#111827; border:1px solid #374151; border-top:none; border-radius:0 0 8px 8px; position:relative; overflow:hidden; cursor:pointer; touch-action:none; }
         .scrollbar-thumb { position:absolute; height:100%; width:100%; background:#3b82f6; border-radius:4px; cursor:grab; opacity:.55; transition:opacity .2s, box-shadow .2s; touch-action:none; }
         .scrollbar-thumb:hover, .scrollbar-thumb.dragging { opacity:1; box-shadow:var(--neon-glow); }
@@ -73,8 +135,30 @@
     </style>
 </head>
 <body>
+    <canvas id="bgCanvas"></canvas>
+    <div id="flash"></div>
+    <div id="topbar">
+        <span id="tbInfo"></span>
+        <div class="tb-center">
+            <button type="button" id="atmoBtn">Атмосфера: вимк.</button>
+            <select id="seasonSel" title="Сезон звуків (для тесту)"><option value="auto">Сезон: авто</option><option value="autumn">Осінь</option><option value="winter">Зима</option><option value="spring">Весна</option><option value="summer">Літо</option></select>
+            <button type="button" id="thunderBtn" title="Тестовий грім">⚡</button>
+        </div>
+        <span id="tbVer">v1.4.5</span>
+    </div>
     <div class="container">
         <h1>📊 Порівняльний аналіз клімату (<span id="cityName">Київ</span>)</h1>
+
+        <div class="wx">
+            <canvas id="wxCanvas"></canvas>
+            <div class="wx-main">
+                <div class="wx-title" id="wxTitle">Погода зараз</div>
+                <div class="wx-temp" id="wxTemp">--</div>
+                <div class="wx-desc" id="wxDesc">Завантаження...</div>
+                <div class="wx-meta" id="wxMeta"></div>
+            </div>
+            <div class="wx-days" id="wxDays"></div>
+        </div>
 
         <div class="controls">
             <div>
@@ -116,6 +200,9 @@
         </div>
     </div>
 
+    <footer id="siteFooter">Розробник: Афтіпа Марко Оцтович<br>Kyiv Ukraine 2026</footer>
+    <div id="avatar"><canvas id="avCanvas"></canvas><span id="avLabel"></span></div>
+
     <script>
         var CITY = { name: 'Київ', lat: '50.4501', lon: '30.5234' };
         var DEBUG = true;
@@ -126,6 +213,7 @@
             document.getElementById('cityName').textContent = city.name;
             document.title = 'Порівняння погоди: ' + city.name + ' по днях';
             dbg('setCity', 'причина: ' + reason + ' -> ' + city.name + ' (' + city.lat + ', ' + city.lon + ')');
+            refreshWidget('зміна міста: ' + reason);
         }
 
 
@@ -478,7 +566,391 @@
         });
         document.getElementById('fetchDataBtn').addEventListener('click', function() { loadWeatherData('кнопка "Оновити графік"'); });
 
+
+        // ================= v1.4.0: погода, аватарка, звуки, фон =================
+        var USER = { name: 'Київ', lat: '50.45', lon: '30.52' };
+        var WX = { kind: null, S: null }, AV = { kind: null, S: null, x: -100, y: -100, tx: -100, ty: -100 };
+        var KIND_TXT = { sun: 'Ясно', moon: 'Ясно (ніч)', partly: 'Мінлива хмарність', cloud: 'Хмарно', rain: 'Дощ', snow: 'Сніг', storm: 'Гроза' };
+        var KIND_EMO = { sun: '☀️', moon: '🌙', partly: '🌤', cloud: '☁️', rain: '🌧', snow: '❄️', storm: '⛈' };
+        var DAYS_UA = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+        var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var dpr = window.devicePixelRatio || 1;
+        function hiCanvas(id, w, h) { var cv = document.getElementById(id); cv.width = w * dpr; cv.height = h * dpr; var c = cv.getContext('2d'); c.scale(dpr, dpr); return c; }
+        var avCtx = hiCanvas('avCanvas', 44, 44);
+        var avatarEl = document.getElementById('avatar'), avLabel = document.getElementById('avLabel');
+        var bgCanvas = document.getElementById('bgCanvas'), bgCtx = bgCanvas.getContext('2d');
+        var seasonSel = document.getElementById('seasonSel'), atmoBtn = document.getElementById('atmoBtn');
+
+        function wxKind(c, day) {
+            if (c <= 1) return day ? 'sun' : 'moon';
+            if (c === 2) return day ? 'partly' : 'cloud';
+            if (c <= 48) return 'cloud';
+            if (c <= 67 || (c >= 80 && c <= 82)) return 'rain';
+            if (c <= 77 || c === 85 || c === 86) return 'snow';
+            return 'storm';
+        }
+        function mkState(nd, nf) {
+            var S = { drops: [], flakes: [], bolt: 0, nextBolt: 2, bx: .5 }, i;
+            for (i = 0; i < (nd || 32); i++) S.drops.push({ x: Math.random(), y: Math.random(), v: .6 + Math.random() * .8 });
+            for (i = 0; i < (nf || 22); i++) S.flakes.push({ x: Math.random(), y: Math.random(), v: .1 + Math.random() * .15, p: Math.random() * 6 });
+            return S;
+        }
+        function circ(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fill(); }
+        function cloudShape(c, x, y, s, col) { c.fillStyle = col; circ(c, x, y, 10 * s); circ(c, x + 12 * s, y - 7 * s, 13 * s); circ(c, x + 26 * s, y, 10 * s); c.fillRect(x, y, 26 * s, 10 * s); }
+
+        function drawBody(c, kind, t, x, y, u) {
+            if (kind === 'sun') {
+                var pu = .5 + .5 * Math.sin(t * 2), neon = '#facc15';
+                c.save(); c.translate(x, y); c.rotate(t * .35);
+                c.strokeStyle = neon; c.fillStyle = 'rgba(250,204,21,.85)'; c.lineWidth = 3 * u; c.lineCap = 'round';
+                c.shadowColor = neon; c.shadowBlur = (6 + 16 * pu) * u;
+                for (var i = 0; i < 8; i++) { c.rotate(Math.PI / 4); c.beginPath(); c.moveTo(0, 19 * u); c.lineTo(0, 27 * u); c.stroke(); }
+                circ(c, 0, 0, 13 * u); c.restore();
+            } else {
+                c.save(); c.shadowColor = '#93c5fd'; c.shadowBlur = (8 + 8 * Math.sin(t * 1.5)) * u; c.fillStyle = '#e0e7ff'; circ(c, x, y, 18 * u);
+                c.globalCompositeOperation = 'destination-out'; c.shadowBlur = 0; circ(c, x + 9 * u, y - 5 * u, 16 * u); c.restore();
+            }
+        }
+
+        function drawWx(c, w, h, kind, t, S) {
+            c.clearRect(0, 0, w, h);
+            var u = Math.min(w, h) / 100, cx = w / 2, cy = h * .42, neon = '#facc15', i;
+            if (kind === 'sun' || kind === 'partly') drawBody(c, 'sun', t, kind === 'sun' ? cx : cx - 16 * u, kind === 'sun' ? cy : cy - 8 * u, u);
+            if (kind === 'moon') drawBody(c, 'moon', t, cx, cy, u);
+            if (kind === 'partly' || kind === 'cloud' || kind === 'rain' || kind === 'snow' || kind === 'storm') {
+                if (!S.sp || S.spk !== kind) {
+                    S.sp = []; for (i = 0; i < (kind === 'partly' ? 1 : 2); i++) S.sp.push(makeCloudSprite(kind));
+                    S.spk = kind; dbg('avatar', 'маркер: створено м\u2019які хмари аватарки для "' + kind + '"');
+                }
+                c.globalAlpha = kind === 'storm' ? .8 : .6;
+                S.sp.forEach(function (sp, j) {
+                    var dw = w * 1.2 * (kind === 'partly' ? .9 : j ? .75 : 1.05), dh = dw * sp.h / sp.w;
+                    var cx2 = w * (kind === 'partly' ? .6 : j ? .62 : .46) + Math.sin(t * .5 + j * 2) * 3, cy2 = h * (kind === 'partly' ? .62 : j ? .62 : .46) + Math.sin(t * .4 + j) * 1.5;
+                    c.drawImage(sp.cv, cx2 - dw / 2, cy2 - dh / 2, dw, dh);
+                });
+                c.globalAlpha = 1;
+            }
+            if (kind === 'rain' || kind === 'storm') {
+                c.strokeStyle = 'rgba(96,165,250,.8)'; c.lineWidth = 1.5; c.beginPath();
+                S.drops.forEach(function (d) {
+                    d.y += d.v * .02; if (d.y > 1) { d.y = .5; d.x = Math.random(); }
+                    c.moveTo(d.x * w, d.y * h); c.lineTo(d.x * w - 3, d.y * h + 8 * u);
+                });
+                c.stroke();
+            }
+            if (kind === 'snow') {
+                c.fillStyle = '#fff';
+                S.flakes.forEach(function (f) { f.y += f.v * .01; if (f.y > 1) { f.y = .45; f.x = Math.random(); } circ(c, (f.x + Math.sin(t + f.p) * .03) * w, f.y * h, 1.8); });
+            }
+            if (kind === 'storm') {
+                if (t > S.nextBolt) { S.bolt = t + .18; S.nextBolt = t + 2 + Math.random() * 5; S.bx = .3 + Math.random() * .4; }
+                if (t < S.bolt) {
+                    c.save(); c.strokeStyle = '#fef9c3'; c.shadowColor = '#fde047'; c.shadowBlur = 14; c.lineWidth = 2.5; c.beginPath();
+                    var bx = S.bx * w, by = cy + 10 * u;
+                    c.moveTo(bx, by); c.lineTo(bx - 6 * u, by + 18 * u); c.lineTo(bx + 3 * u, by + 20 * u); c.lineTo(bx - 5 * u, by + 40 * u); c.stroke(); c.restore();
+                }
+            }
+        }
+
+        // ---------- віджет на весь блок: хмари випливають, пропливають під текстом і зникають під прогнозом ----------
+        var wxCv = document.getElementById('wxCanvas'), wxBox = document.querySelector('.wx'), offCv = document.createElement('canvas'), wxCtx, offCtx, wxW = 0, wxH = 0;
+        function sizeWx() {
+            wxW = wxBox.clientWidth; wxH = wxBox.clientHeight;
+            [wxCv, offCv].forEach(function (cv) { cv.width = wxW * dpr; cv.height = wxH * dpr; });
+            wxCtx = wxCv.getContext('2d'); offCtx = offCv.getContext('2d');
+            wxCtx.setTransform(dpr, 0, 0, dpr, 0, 0); offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            dbg('widget', 'маркер: змінився розмір віджета -> ' + wxW + 'x' + wxH);
+        }
+        var CLOUD_RGB = { partly: '200,212,230', cloud: '180,194,214', rain: '135,152,180', storm: '105,116,145', snow: '220,230,244' };
+        var CLOUD_A = { partly: .13, cloud: .15, rain: .18, storm: .24, snow: .16 };
+        function makeCloudSprite(k) {
+            var W = 260 + Math.random() * 180, H = W * .42, pad = H * .6, cv = document.createElement('canvas'), c = cv.getContext('2d'), rgb = CLOUD_RGB[k], N = 11 + Math.floor(Math.random() * 4), P = [], j;
+            var dark = rgb.split(',').map(function (v) { return Math.round(v * .78); }).join(','), light = rgb.split(',').map(function (v) { return Math.min(255, +v + 45); }).join(',');
+            cv.width = Math.ceil(W + 2 * pad); cv.height = Math.ceil(H + 2 * pad);
+            function puff(x, y, r, a, col) {
+                var g = c.createRadialGradient(x, y, 0, x, y, r);
+                g.addColorStop(0, 'rgba(' + col + ',' + a + ')'); g.addColorStop(.55, 'rgba(' + col + ',' + a * .5 + ')'); g.addColorStop(1, 'rgba(' + col + ',0)');
+                c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+            }
+            for (j = 0; j < N; j++) { var tx = (j + .5) / N, bump = Math.sin(Math.PI * tx); P.push({ x: pad + tx * W, y: pad + H * .66 - bump * H * (.1 + Math.random() * .2), r: H * (.16 + .2 * bump * (.7 + Math.random() * .3)) }); }
+            P.forEach(function (q) { puff(q.x, q.y + q.r * .3, q.r * 1.05, .5, dark); });
+            P.forEach(function (q) { puff(q.x, q.y, q.r, .6, rgb); });
+            P.forEach(function (q) { puff(q.x - q.r * .1, q.y - q.r * .3, q.r * .7, .4, light); });
+            return { cv: cv, w: W + 2 * pad, h: H + 2 * pad, v: 12 + Math.random() * 14, a: CLOUD_A[k] * (.8 + Math.random() * .4) };
+        }
+        function drawWide(t) {
+            var w = wxW, h = wxH, S = WX.S, k = WX.kind, c = wxCtx, o = offCtx, i;
+            if (!w || !h) return;
+            c.clearRect(0, 0, w, h); o.clearRect(0, 0, w, h);
+            if (k === 'sun' || k === 'partly') drawBody(c, 'sun', t, 90, h / 2, 1.2);
+            if (k === 'moon') drawBody(c, 'moon', t, 90, h / 2, 1.2);
+            if (k !== 'sun' && k !== 'moon') {
+                if (!S.sp || S.spk !== k) {
+                    S.sp = []; for (i = 0; i < (k === 'partly' ? 2 : 4); i++) S.sp.push(makeCloudSprite(k));
+                    S.spk = k; dbg('widget', 'маркер: створено ' + S.sp.length + ' м\'яких хмар для "' + k + '"');
+                }
+                var n = S.sp.length, span = w + 700;
+                for (i = 0; i < n; i++) {
+                    var sp = S.sp[i], sc = 1 + .04 * Math.sin(t * .15 + i), x = ((t * sp.v + i * span / n) % span) - 350, y = h * (.16 + ((i * 37) % 50) / 100) - sp.h / 2 + Math.sin(t * .2 + i) * 3;
+                    o.globalAlpha = sp.a; o.drawImage(sp.cv, x, y, sp.w * sc, sp.h * sc);
+                }
+                o.globalAlpha = 1;
+                if (k === 'rain' || k === 'storm') {
+                    o.strokeStyle = 'rgba(96,165,250,.8)'; o.lineWidth = 1.5; o.beginPath();
+                    S.drops.forEach(function (d) {
+                        d.y += d.v * .02; if (d.y > 1) { d.y = 0; d.x = Math.random(); }
+                        var dy = h * (.4 + .6 * d.y); o.moveTo(d.x * w, dy); o.lineTo(d.x * w - 3, dy + 9);
+                    });
+                    o.stroke();
+                }
+                if (k === 'snow') {
+                    o.fillStyle = '#fff';
+                    S.flakes.forEach(function (f) { f.y += f.v * .01; if (f.y > 1) { f.y = 0; f.x = Math.random(); } circ(o, (f.x + Math.sin(t + f.p) * .01) * w, h * (.35 + .65 * f.y), 1.8); });
+                }
+                if (k === 'storm') {
+                    if (t > S.nextBolt) { S.bolt = t + .18; S.nextBolt = t + 2 + Math.random() * 5; S.bx = .2 + Math.random() * .4; }
+                    if (t < S.bolt) {
+                        o.save(); o.strokeStyle = '#fef9c3'; o.shadowColor = '#fde047'; o.shadowBlur = 14; o.lineWidth = 2.5; o.beginPath();
+                        var bx = S.bx * w, by = h * .4;
+                        o.moveTo(bx, by); o.lineTo(bx - 8, by + 24); o.lineTo(bx + 4, by + 27); o.lineTo(bx - 7, by + 55); o.stroke(); o.restore();
+                    }
+                }
+                var g = o.createLinearGradient(0, 0, w, 0);
+                g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(Math.min(.2, 170 / w), 'rgba(0,0,0,1)'); g.addColorStop(.52, 'rgba(0,0,0,1)'); g.addColorStop(.9, 'rgba(0,0,0,0)');
+                o.globalCompositeOperation = 'destination-in'; o.fillStyle = g; o.fillRect(0, 0, w, h); o.globalCompositeOperation = 'source-over';
+                c.drawImage(offCv, 0, 0, w, h);
+            }
+        }
+        sizeWx();
+        if (window.ResizeObserver) new ResizeObserver(sizeWx).observe(wxBox);
+
+        // ---------- погода ----------
+        async function getWx(lat, lon) {
+            var u = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=5&timezone=auto&wind_speed_unit=ms';
+            dbg('weather', 'запит: ' + u);
+            var r = await fetch(u);
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }
+        var wxSeq = 0;
+        async function refreshWidget(reason) {
+            var my = ++wxSeq;
+            dbg('widget', 'маркер: ' + reason + ' -> ' + CITY.name);
+            document.getElementById('wxTitle').textContent = 'Погода зараз: ' + CITY.name + ' (обране місто)';
+            try {
+                var d = await getWx(CITY.lat, CITY.lon);
+                if (my !== wxSeq) { dbg('widget', 'маркер: застарілу відповідь відкинуто'); return; }
+                var cu = d.current, kind = wxKind(cu.weather_code, cu.is_day);
+                if (kind !== WX.kind) { WX.kind = kind; WX.S = mkState(110, 70); }
+                document.getElementById('wxTemp').textContent = Math.round(cu.temperature_2m) + '°C';
+                document.getElementById('wxDesc').textContent = KIND_TXT[kind];
+                document.getElementById('wxMeta').textContent = 'Вітер ' + Math.round(cu.wind_speed_10m) + ' м/с · вологість ' + Math.round(cu.relative_humidity_2m) + '%';
+                var html = '';
+                for (var i = 1; i < 5; i++) {
+                    var dt = new Date(d.daily.time[i] + 'T12:00'), k = wxKind(d.daily.weather_code[i], true);
+                    html += '<div class="wx-day">' + DAYS_UA[dt.getDay()] + '<br>' + KIND_EMO[k] + '<br>' + Math.round(d.daily.temperature_2m_max[i]) + '° / ' + Math.round(d.daily.temperature_2m_min[i]) + '°</div>';
+                }
+                document.getElementById('wxDays').innerHTML = html;
+                dbg('widget', 'малюнок: ' + kind + ' (код ' + cu.weather_code + ')');
+            } catch (e) {
+                console.error('[WeatherScope][error]', e);
+                document.getElementById('wxDesc').textContent = 'Не вдалося отримати погоду.';
+            }
+        }
+        async function refreshAvatar(reason) {
+            try {
+                var d = await getWx(USER.lat, USER.lon), cu = d.current;
+                AV.kind = wxKind(cu.weather_code, cu.is_day); AV.S = AV.S || mkState();
+                avLabel.textContent = USER.name + ' · ' + Math.round(cu.temperature_2m) + '°';
+                dbg('avatar', 'маркер: ' + reason + ' -> ' + AV.kind + ', місто користувача: ' + USER.name);
+            } catch (e) { console.error('[WeatherScope][error]', e); }
+        }
+
+        // ---------- місто користувача ----------
+        function tickClock() {
+            var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
+            document.getElementById('tbInfo').textContent = p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear() + ', ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + ' · 📍 ' + USER.name;
+        }
+        function nearestCity(lat, lon) {
+            var best = null, bd = 1e9;
+            Object.keys(CITIES).forEach(function (g) {
+                CITIES[g].split(';').forEach(function (it) {
+                    var a = it.split(':'), c = a[1].split(','), dx = c[0] - lat, dy = (c[1] - lon) * Math.cos(lat * Math.PI / 180), dd = dx * dx + dy * dy;
+                    if (dd < bd) { bd = dd; best = a[0]; }
+                });
+            });
+            return best;
+        }
+        function locateUser() {
+            function done(lat, lon, name, reason) {
+                USER = { name: name, lat: lat, lon: lon };
+                dbg('geo', reason + ': ' + name + ' (' + lat + ', ' + lon + ')');
+                tickClock(); refreshAvatar('місто користувача визначено');
+            }
+            if (!navigator.geolocation) { done('50.45', '30.52', 'Київ', 'маркер: геолокація не підтримується, за замовчуванням'); return; }
+            navigator.geolocation.getCurrentPosition(async function (p) {
+                var lat = p.coords.latitude.toFixed(3), lon = p.coords.longitude.toFixed(3), name = null;
+                try {
+                    var r = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=uk');
+                    var j = await r.json(); name = j.city || j.locality;
+                } catch (e) { dbg('geo', 'маркер: зворотний геокодинг недоступний (' + e.message + ')'); }
+                done(lat, lon, name || nearestCity(lat, lon), 'геолокацію отримано');
+            }, function (e) { done('50.45', '30.52', 'Київ', 'маркер: геолокацію відхилено або недоступна (' + e.message + '), за замовчуванням'); }, { timeout: 8000, maximumAge: 600000 });
+        }
+
+        // ---------- звуки (Web Audio) ----------
+        var AC = null, A = { on: false, N: [] };
+        var PROF = {
+            autumn: { rain: .55, wind: .6, thunder: [30, 75], birds: 0, crickets: 0 },
+            winter: { rain: 0, wind: .8, thunder: null, birds: 0, crickets: 0 },
+            spring: { rain: .3, wind: .35, thunder: [70, 150], birds: 1, crickets: 0 },
+            summer: { rain: .12, wind: .2, thunder: [60, 140], birds: .6, crickets: 1 }
+        };
+        function season() {
+            var v = seasonSel.value; if (v !== 'auto') return v;
+            var m = new Date().getMonth() + 1;
+            return m >= 3 && m <= 5 ? 'spring' : m >= 6 && m <= 8 ? 'summer' : m >= 9 && m <= 11 ? 'autumn' : 'winter';
+        }
+        function noiseBuf(brown) {
+            var n = AC.sampleRate * 3, b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0), last = 0;
+            for (var i = 0; i < n; i++) { var w = Math.random() * 2 - 1; if (brown) { last = (last + .02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w; }
+            return b;
+        }
+        function loopSrc(buf) { var s = AC.createBufferSource(); s.buffer = buf; s.loop = true; s.start(); A.N.push(s); return s; }
+        function flash() { var f = document.getElementById('flash'); f.style.transition = 'none'; f.style.opacity = .22; setTimeout(function () { f.style.transition = 'opacity .7s'; f.style.opacity = 0; }, 60); }
+
+        function startAtmo() {
+            if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+            AC.resume();
+            A.on = true; A.season = season(); var p = PROF[A.season];
+            A.white = A.white || noiseBuf(false); A.brown = A.brown || noiseBuf(true);
+            A.master = AC.createGain(); A.master.gain.value = 0; A.master.connect(AC.destination);
+            A.master.gain.setTargetAtTime(.8, AC.currentTime, .5);
+            var rs = loopSrc(A.white), hp = AC.createBiquadFilter(), lp = AC.createBiquadFilter();
+            hp.type = 'highpass'; hp.frequency.value = 900; lp.type = 'lowpass'; lp.frequency.value = 7000;
+            A.rainG = AC.createGain(); A.rainG.gain.value = 0; rs.connect(hp); hp.connect(lp); lp.connect(A.rainG); A.rainG.connect(A.master);
+            var ws = loopSrc(A.brown); A.windF = AC.createBiquadFilter(); A.windF.type = 'bandpass'; A.windF.Q.value = .9;
+            A.windG = AC.createGain(); A.windG.gain.value = 0; ws.connect(A.windF); A.windF.connect(A.windG); A.windG.connect(A.master);
+            if (p.crickets) cricketsOn();
+            wander(); chirp(); nextThunder();
+            dbg('audio', 'маркер: старт, сезон ' + A.season + ', профіль ' + JSON.stringify(p));
+        }
+        function stopAtmo() {
+            A.on = false; clearTimeout(A.wT); clearTimeout(A.tT); clearTimeout(A.bT);
+            var m = A.master, ns = A.N; A.N = [];
+            m.gain.setTargetAtTime(0, AC.currentTime, .25);
+            setTimeout(function () { ns.forEach(function (s) { try { s.stop(); } catch (e) { } }); m.disconnect(); }, 1200);
+            dbg('audio', 'маркер: зупинено');
+        }
+        function wander() {
+            if (!A.on) return;
+            var p = PROF[A.season], t = AC.currentTime;
+            var rl = p.rain ? (Math.random() < .2 ? .02 : p.rain * (.4 + Math.random() * .9)) : 0, wl = p.wind * (.15 + Math.random());
+            A.rainG.gain.setTargetAtTime(rl * .5, t, 2.5); A.windG.gain.setTargetAtTime(wl * .6, t, 1.8); A.windF.frequency.setTargetAtTime(220 + wl * 700, t, 1.5);
+            dbg('audio', 'маркер: хвиля змін, дощ=' + rl.toFixed(2) + ', вітер=' + wl.toFixed(2));
+            A.wT = setTimeout(wander, 3500 + Math.random() * 6000);
+        }
+        function crack(t) {
+            var s = AC.createBufferSource(), hp = AC.createBiquadFilter(), g = AC.createGain();
+            s.buffer = A.white; hp.type = 'highpass'; hp.frequency.value = 1500;
+            g.gain.setValueAtTime(.5, t); g.gain.exponentialRampToValueAtTime(.001, t + .25);
+            s.connect(hp); hp.connect(g); g.connect(A.master); s.start(t); s.stop(t + .3);
+        }
+        function thunder(near, reason) {
+            if (!AC || !A.on) return;
+            var dist = near ? .1 + Math.random() * .2 : Math.random(), t = AC.currentTime + dist * 2, dur = 4 + Math.random() * 5, dir = Math.random() < .5 ? 1 : -1, peak = (1 - dist * .75) * .9;
+            var s = AC.createBufferSource(), lp = AC.createBiquadFilter(), g = AC.createGain(), pan = AC.createStereoPanner();
+            s.buffer = A.brown; s.loop = true; lp.type = 'lowpass'; lp.frequency.value = 750 - dist * 500;
+            pan.pan.setValueAtTime(.9 * dir, t); pan.pan.linearRampToValueAtTime(-.9 * dir, t + dur);
+            g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + .08 + dist * .5);
+            for (var k = 1; k < 4; k++) g.gain.linearRampToValueAtTime(peak * (.3 + Math.random() * .5), t + k * dur / 5);
+            g.gain.exponentialRampToValueAtTime(.001, t + dur);
+            s.connect(lp); lp.connect(g); g.connect(pan); pan.connect(A.master); s.start(t); s.stop(t + dur + .1);
+            if (dist < .45) crack(t);
+            flash();
+            dbg('thunder', 'маркер: ' + reason + '; віддаленість=' + dist.toFixed(2) + ', стерео ' + (dir > 0 ? 'правий -> лівий' : 'лівий -> правий') + ', тривалість ' + dur.toFixed(1) + ' с');
+        }
+        function nextThunder() {
+            var p = PROF[A.season]; if (!A.on || !p.thunder) return;
+            A.tT = setTimeout(function () { thunder(false, 'за розкладом сезону'); nextThunder(); }, (p.thunder[0] + Math.random() * (p.thunder[1] - p.thunder[0])) * 1000);
+        }
+        function chirp() {
+            var p = PROF[A.season]; if (!A.on || !p.birds) return;
+            var h = new Date().getHours();
+            if (h >= 5 && h <= 20) {
+                var n = 2 + Math.floor(Math.random() * 3), f0 = 2200 + Math.random() * 2000, pn = Math.random() * 1.6 - .8, t = AC.currentTime;
+                for (var i = 0; i < n; i++) {
+                    var o = AC.createOscillator(), g = AC.createGain(), pa = AC.createStereoPanner(), t0 = t + i * .13;
+                    o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f0 * (1.3 + Math.random() * .5), t0 + .09);
+                    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.05 * p.birds, t0 + .02); g.gain.linearRampToValueAtTime(0, t0 + .1);
+                    pa.pan.value = pn; o.connect(g); g.connect(pa); pa.connect(A.master); o.start(t0); o.stop(t0 + .12);
+                }
+                dbg('audio', 'маркер: пташиний щебет, нот ' + n);
+            }
+            A.bT = setTimeout(chirp, 2500 + Math.random() * 9000);
+        }
+        function cricketsOn() {
+            var h = new Date().getHours();
+            if (h < 18 && h > 5) { dbg('audio', 'маркер: цвіркуни пропущено (зараз не вечір/ніч)'); return; }
+            var o = AC.createOscillator(), l = AC.createOscillator(), lg = AC.createGain(), g = AC.createGain(), out = AC.createGain();
+            o.frequency.value = 4300; l.frequency.value = 16; lg.gain.value = .5; g.gain.value = .5; out.gain.value = .012;
+            l.connect(lg); lg.connect(g.gain); o.connect(g); g.connect(out); out.connect(A.master); o.start(); l.start(); A.N.push(o, l);
+            dbg('audio', 'маркер: цвіркуни увімкнено');
+        }
+        function toggleAtmo(reason) {
+            if (A.on) stopAtmo(); else startAtmo();
+            atmoBtn.classList.toggle('on', A.on); atmoBtn.textContent = 'Атмосфера: ' + (A.on ? 'увімк.' : 'вимк.');
+            dbg('atmo', 'маркер: ' + reason + ' -> ' + (A.on ? 'увімкнено' : 'вимкнено'));
+        }
+
+        // ---------- фон "проліт крізь хмари" ----------
+        var BG = [];
+        for (var bi = 0; bi < 26; bi++) BG.push({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() });
+        function sizeBg() { bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight; }
+        var BG_COL = { sun: '255,226,160', moon: '150,170,235', partly: '186,200,225', cloud: '160,174,196', rain: '115,145,200', storm: '95,105,150', snow: '230,240,255' };
+        var BG_SPD = { storm: 2, rain: 1.4 };
+        function drawBg() {
+            var W = bgCanvas.width, H = bgCanvas.height, k = WX.kind || 'cloud', col = BG_COL[k], spd = BG_SPD[k] || 1, amp = k === 'sun' ? .16 : .26;
+            if (BG.last !== k) { dbg('bg', 'маркер: колір/швидкість фону змінено під погоду "' + k + '" (' + col + '), швидкість x' + spd); BG.last = k; }
+            bgCtx.clearRect(0, 0, W, H);
+            BG.forEach(function (b) {
+                b.z += .0006 * spd; if (b.z > 1) { b.z = 0; b.x = Math.random() * 2 - 1; b.y = Math.random() * 2 - 1; }
+                var s = b.z, x = W / 2 + b.x * W * s * 1.1, y = H / 2 + b.y * H * s * 1.1, r = (.06 + s * .35) * W, a = Math.sin(Math.PI * s) * amp;
+                var g = bgCtx.createRadialGradient(x, y, 0, x, y, r);
+                g.addColorStop(0, 'rgba(' + col + ',' + a + ')'); g.addColorStop(1, 'rgba(' + col + ',0)');
+                bgCtx.fillStyle = g; bgCtx.fillRect(x - r, y - r, 2 * r, 2 * r);
+            });
+        }
+
+        // ---------- головний цикл і події ----------
+        var T0 = performance.now();
+        function loop(now) {
+            var t = (now - T0) / 1000;
+            if (WX.kind) drawWide(t);
+            if (AV.kind) {
+                AV.x += (AV.tx - AV.x) * .15; AV.y += (AV.ty - AV.y) * .15;
+                avatarEl.style.transform = 'translate(' + AV.x + 'px,' + AV.y + 'px)';
+                drawWx(avCtx, 44, 44, AV.kind, t, AV.S);
+            }
+            if (!REDUCED) drawBg();
+            requestAnimationFrame(loop);
+        }
+        document.addEventListener('mousemove', function (e) { AV.tx = e.clientX + 16; AV.ty = e.clientY + 14; avatarEl.style.opacity = .8; });
+        window.addEventListener('resize', sizeBg);
+        atmoBtn.addEventListener('click', function () { toggleAtmo('кнопка "Атмосфера"'); });
+        document.getElementById('thunderBtn').addEventListener('click', function () { if (!A.on) toggleAtmo('кнопка "Грім" (автозапуск)'); thunder(true, 'тестова кнопка'); });
+        seasonSel.addEventListener('change', function () {
+            dbg('audio', 'маркер: змінено сезон -> ' + seasonSel.value);
+            if (A.on) { stopAtmo(); startAtmo(); }
+        });
+        sizeBg(); bgCanvas.style.opacity = REDUCED ? 0 : 1;
+        dbg('bg', REDUCED ? 'маркер: системний режим "зменшити рух" - фон вимкнено' : 'маркер: динамічний фон увімкнено постійно');
+        setInterval(function () { refreshWidget('таймер 10 хв'); refreshAvatar('таймер 10 хв'); }, 600000);
+
         initCities();
+        tickClock(); setInterval(tickClock, 1000);
+        locateUser();
+        requestAnimationFrame(loop);
         loadWeatherData('первинне завантаження сторінки');
     </script>
 </body>
