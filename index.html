@@ -761,7 +761,7 @@
             try {
                 var d = await getWx(USER.lat, USER.lon), cu = d.current;
                 AV.kind = wxKind(cu.weather_code, cu.is_day); AV.S = AV.S || mkState();
-                avLabel.textContent = USER.name + ' · ' + Math.round(cu.temperature_2m) + '°';
+                avLabel.textContent = USER.name + '  ' + Math.round(cu.temperature_2m) + '°';
                 dbg('avatar', 'маркер: ' + reason + ' -> ' + AV.kind + ', місто користувача: ' + USER.name);
             } catch (e) { console.error('[WeatherScope][error]', e); }
         }
