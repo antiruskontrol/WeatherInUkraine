@@ -1,9 +1,45 @@
 <!--
 ===================================================================
-Версія:       1.4.5 (WeatherScope Pro)
-Дата, час:    2026-10-07 22:36
+Версія:       1.5.3 (WeatherScope Pro)
+Дата, час:    2026-10-08 07:56
 Розробник:    Афтіпа Марко Оцтович
 -------------------------------------------------------------------
+Зміни 1.5.3 відносно 1.5.2:
+ 1. Додано іконку сайту: <link rel="icon" ... href="favicon.png"> та <link rel="apple-touch-icon" ...>.
+    Файл favicon.png має лежати в одній папці з цією сторінкою.
+
+Зміни 1.5.2 відносно 1.5.1:
+ 1. Посилання з параметрами: ?city=Назва&param=метрика (напр. ?city=Львів&param=temperature_2m_min).
+    URL читається ДО першого завантаження (пріоритет: URL > збережене місто > Київ), невідомий параметр ігнорується.
+    Якщо міста немає у списку, виконується пошук за назвою; якщо і він нічого не дав - завантажується звичайне місто.
+ 2. Адреса оновлюється при зміні міста й параметра через replaceState (без нових записів в історії), лише на http(s).
+ 3. Захист від гонки запитів: застаріла відповідь не перемальовує графік новішого запиту.
+ 4. Інтегровано замість окремого блоку: окремий блок з коментаря користувача з сторінки прибрати.
+
+Зміни 1.5.1 відносно 1.5.0:
+ 1. Графік: для ПОТОЧНОГО року останні дні (8 днів, включно з сьогоднішнім) беруться з прогнозного API
+    Open-Meteo (past_days), бо архів відстає на 5-7 днів; решта року - з архіву.
+ 2. Сьогоднішня точка - ПРОГНОЗ: порожній маркер і пунктирний останній відрізок (для стовпчиків опадів -
+    напівпрозорий стовпчик); у підказці напис "прогноз". Раніше сюди потрапляла модельна оцінка як факт.
+ 3. Підказка під графіком доповнена поясненням порожнього маркера.
+
+Зміни 1.5.0 відносно 1.4.6:
+ 1. Підключено SunCalc (jsdelivr): точні схід/захід сонця та положення сонця й місяця для ОБРАНОГО міста.
+ 2. Сонце вдень рухається дугою через віджет: зранку низько зліва, опівдні вгорі, ввечері справа;
+    поблизу горизонту тьмяніє; під текстом приглушується мінімально (x0.85);
+    при мінливій хмарності хмара, що проходить над сонцем, його частково перекриває (приглушує).
+ 3. Місяць ТІЛЬКИ вночі (вдень лише сонце): справжня фаза (новий, молодий, чверті, зростаючий, повня,
+    спадаючий, старий), зростаючий освітлений праворуч, спадаючий ліворуч; рухається дугою від сходу до заходу.
+ 4. Дебаг-принти sky: день/ніч, положення на шляху, фаза місяця.
+ 5. VERSION і шапку оновлено разом.
+
+Зміни 1.4.6 відносно 1.4.5:
+ 1. Заголовок і іконка витончені: тонка SVG-іконка (графік двох років) замість емодзі, легка гарнітура,
+    місто відокремлене тонкою лінією, під заголовком градієнтна риска.
+ 2. Версійність: напис версії у верхній панелі тепер береться зі змінної VERSION (раніше лишався "v1.4.0"
+    попри оновлення шапки). ПРИ КОЖНІЙ ЗМІНІ ВЕРСІЇ оновлювати і шапку, і VERSION.
+ 3. Звук дощу зменшено на 50% (множник 0.5 -> 0.25).
+
 Зміни 1.4.5 відносно 1.4.4:
  1. Хмари на аватарці біля курсора тепер у стилі віджета: м'які об'ємні клуби з градієнтів
     (темніший низ, світліший верх), напівпрозорі, без різких країв; повільно "плавають" на місці.
@@ -68,9 +104,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Порівняння погоди в Києві по днях</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
     <style>
         :root { --neon: #3b82f6; --neon-glow: 0 0 6px #3b82f6, 0 0 18px rgba(59,130,246,.65); }
         body { background:#111827; color:#f3f4f6; font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; margin:0; padding:24px; display:flex; justify-content:center; }
@@ -122,6 +161,10 @@
         #avLabel { font-size:11px; color:rgba(243,244,246,.6); white-space:nowrap; }
         #siteFooter { margin-top:24px; text-align:center; font-size:13px; color:rgba(243,244,246,.55); line-height:1.6; position:relative; z-index:1; }
         @media (hover:none) { #avatar { display:none; } }
+        .site-title { display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin:0 0 8px; font-size:22px; font-weight:300; letter-spacing:.06em; color:#e5e7eb; }
+        .title-icon { filter:drop-shadow(0 0 6px rgba(96,165,250,.55)); flex:none; }
+        .title-city { font-weight:500; color:#60a5fa; letter-spacing:.04em; padding-left:14px; border-left:1px solid rgba(96,165,250,.4); text-shadow:0 0 12px rgba(96,165,250,.45); }
+        .title-rule { height:1px; margin:0 auto 24px; width:min(420px,70%); background:linear-gradient(90deg, transparent, rgba(96,165,250,.6), transparent); }
         .chart-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:12px; }
         .reset-zoom-btn { background:#374151; color:#9ca3af; border:1px solid #4b5563; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:box-shadow .2s, border-color .2s, color .2s; }
         .reset-zoom-btn:hover { color:#fff; }
@@ -144,10 +187,20 @@
             <select id="seasonSel" title="Сезон звуків (для тесту)"><option value="auto">Сезон: авто</option><option value="autumn">Осінь</option><option value="winter">Зима</option><option value="spring">Весна</option><option value="summer">Літо</option></select>
             <button type="button" id="thunderBtn" title="Тестовий грім">⚡</button>
         </div>
-        <span id="tbVer">v1.4.5</span>
+        <span id="tbVer"></span>
     </div>
     <div class="container">
-        <h1>📊 Порівняльний аналіз клімату (<span id="cityName">Київ</span>)</h1>
+        <h1 class="site-title">
+            <svg class="title-icon" viewBox="0 0 32 32" width="30" height="30" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 5v21h22" stroke="#4b5563" stroke-width="1.4"/>
+                <path d="M8 24l5-3 4-1 6-5" stroke="#facc15" stroke-width="1.4" opacity=".85"/>
+                <path d="M8 21l5-6 4 3 6-9" stroke="#60a5fa" stroke-width="1.6"/>
+                <circle cx="23" cy="9" r="1.6" fill="#60a5fa" stroke="none"/>
+            </svg>
+            <span>Порівняльний аналіз клімату</span>
+            <span class="title-city" id="cityName">Київ</span>
+        </h1>
+        <div class="title-rule"></div>
 
         <div class="wx">
             <canvas id="wxCanvas"></canvas>
@@ -187,7 +240,7 @@
         </div>
 
         <div class="chart-header">
-            <span style="font-size:12px; color:hsl(268,54%,72%);">💡 Колесо миші — масштаб, затисніть графік або повзунок внизу — прокрутка. 29 лютого пропущено, щоб дати збігалися.</span>
+            <span style="font-size:12px; color:hsl(268,54%,72%);">💡 Колесо миші — масштаб, затисніть графік або повзунок внизу — прокрутка. 29 лютого пропущено, щоб дати збігалися. Порожній маркер - прогноз на сьогодні.</span>
             <button type="button" id="resetZoomBtn" class="reset-zoom-btn">🔍 Скинути масштаб</button>
         </div>
 
@@ -205,6 +258,7 @@
 
     <script>
         var CITY = { name: 'Київ', lat: '50.4501', lon: '30.5234' };
+        var VERSION = '1.5.3'; // оновлювати разом із шапкою файлу
         var DEBUG = true;
         function dbg(marker, info) { if (DEBUG) console.log('[WeatherScope][' + marker + ']', info === undefined ? '' : info); }
 
@@ -247,6 +301,7 @@
             'Чернігівська': 'Чернігів:51.49,31.29;Ніжин:51.05,31.89;Прилуки:50.59,32.39;Новгород-Сіверський:51.99,33.26'
         };
         var FOUND_GROUP = 'Знайдені за пошуком';
+        var PENDING_SEARCH = null;
         var citySelect = document.getElementById('citySelect');
         var cityHint = document.getElementById('cityHint');
 
@@ -265,8 +320,17 @@
             setCity({ name: o.textContent, lat: pr[0], lon: pr[1] }, reason);
             try { localStorage.setItem('weatherscope_city', JSON.stringify(CITY)); dbg('city', 'збережено вибір у localStorage'); }
             catch (e) { dbg('city', 'маркер: localStorage недоступний (' + e.message + ')'); }
+            syncURL('вибір міста');
         }
 
+        function syncURL(reason) {
+            if (!/^https?:$/.test(window.location.protocol)) { dbg('url', 'маркер: ' + reason + ' - адресу не змінено (протокол ' + window.location.protocol + ')'); return; }
+            try {
+                var nm = CITY.name.replace(/\s*\(.*\)\s*$/, ''), u = window.location.pathname + '?city=' + encodeURIComponent(nm) + '&param=' + encodeURIComponent(document.getElementById('metricSelect').value);
+                window.history.replaceState(null, '', u);
+                dbg('url', 'маркер: ' + reason + ' -> ' + u);
+            } catch (e) { dbg('url', 'маркер: не вдалося оновити адресу (' + e.message + ')'); }
+        }
         function initCities() {
             Object.keys(CITIES).forEach(function(group) {
                 CITIES[group].split(';').forEach(function(item) {
@@ -279,6 +343,17 @@
                 var saved = JSON.parse(localStorage.getItem('weatherscope_city') || 'null');
                 if (saved && saved.name && saved.lat && saved.lon) { start = saved; dbg('city', 'маркер: відновлено збережене місто ' + saved.name); }
             } catch (e) { dbg('city', 'маркер: не вдалося прочитати localStorage (' + e.message + ')'); }
+            var q = new URLSearchParams(window.location.search), qc = (q.get('city') || '').trim(), qp = q.get('param'), metricEl = document.getElementById('metricSelect');
+            if (qp) {
+                var mo = Array.from(metricEl.options).find(function (o) { return o.value === qp; });
+                if (mo) { metricEl.value = qp; dbg('url', 'маркер: параметр з адреси -> ' + qp); }
+                else dbg('url', 'маркер: невідомий param "' + qp + '" в адресі, ігноровано');
+            }
+            if (qc) {
+                var want = qc.toLowerCase(), hit = Array.from(citySelect.options).find(function (o) { return o.textContent.toLowerCase() === want; });
+                if (hit) { var hp = hit.value.split(','); start = { name: hit.textContent, lat: hp[0], lon: hp[1] }; dbg('url', 'маркер: місто з адреси -> ' + hit.textContent); }
+                else { PENDING_SEARCH = qc; dbg('url', 'маркер: міста "' + qc + '" немає у списку, буде пошук за назвою'); }
+            }
             var val = start.lat + ',' + start.lon;
             var opt = Array.from(citySelect.options).find(function(o) { return o.value === val; });
             if (!opt) opt = addCityOption(start.name, start.lat, start.lon, FOUND_GROUP);
@@ -294,7 +369,7 @@
                 if (!r.ok) throw new Error('HTTP ' + r.status);
                 var res = (await r.json()).results || [];
                 dbg('citySearch', 'знайдено: ' + res.length);
-                if (!res.length) { cityHint.textContent = 'Нічого не знайдено за запитом "' + q + '".'; return; }
+                if (!res.length) { cityHint.textContent = 'Нічого не знайдено за запитом "' + q + '".'; return false; }
                 var first = null;
                 res.forEach(function(f) {
                     var o = addCityOption(f.name + (f.admin1 ? ' (' + f.admin1 + ')' : ''), f.latitude, f.longitude, FOUND_GROUP);
@@ -304,9 +379,11 @@
                 cityHint.textContent = res.length > 1 ? 'Знайдено збігів: ' + res.length + '. Інші варіанти — у списку, група «' + FOUND_GROUP + '».' : '';
                 applyCityFromSelect('пошук "' + q + '"');
                 loadWeatherData('обрано місто з пошуку: ' + CITY.name);
+                return true;
             } catch (e) {
                 console.error('[WeatherScope][error]', e);
                 cityHint.textContent = 'Помилка пошуку: ' + e.message;
+                return false;
             }
         }
 
@@ -416,9 +493,29 @@
             scrollChartTo(((e.clientX - rect.left) / rect.width) * total - vis / 2, 'клік по доріжці');
         });
 
+        function makeDataset(label, data, mainColor, chartType, fIdx) {
+            var isF = function (ctx) { return fIdx !== null && ctx.dataIndex === fIdx; };
+            return {
+                label: label, data: data, fIdx: fIdx,
+                borderColor: mainColor,
+                backgroundColor: chartType === 'bar' ? function (ctx) { return withAlpha(mainColor, isF(ctx) ? .25 : .8); } : withAlpha(mainColor, 0.08),
+                borderWidth: 2,
+                pointRadius: function (ctx) { return isF(ctx) ? 5 : 2; },
+                pointHoverRadius: 8,
+                pointBackgroundColor: function (ctx) { return isF(ctx) ? 'rgba(3,7,18,.9)' : mainColor; },
+                pointBorderColor: function (ctx) { return isF(ctx) ? mainColor : '#ffffff'; },
+                pointBorderWidth: function (ctx) { return isF(ctx) ? 2 : 1; },
+                tension: 0.15,
+                clip: false,
+                segment: { borderDash: function (ctx) { return fIdx !== null && ctx.p1DataIndex === fIdx ? [6, 4] : undefined; } }
+            };
+        }
+
         // ---------- Завантаження даних ----------
+        var loadSeq = 0;
         async function loadWeatherData(reason) {
             dbg('load', 'маркер спрацювання: ' + reason);
+            var myLoad = ++loadSeq;
             var selectedYears = Array.from(document.querySelectorAll('.year-checkbox:checked')).map(function(cb) { return cb.value; });
             var metricEl = document.getElementById('metricSelect');
             var selectedMetric = metricEl.value;
@@ -444,37 +541,41 @@
                     var endDate = currentYear + '-12-31';
                     if (currentYear >= today.getFullYear()) endDate = (todayStr < endDate) ? todayStr : endDate;
 
-                    var url = 'https://archive-api.open-meteo.com/v1/archive?latitude=' + CITY.lat + '&longitude=' + CITY.lon + '&start_date=' + startDate + '&end_date=' + endDate + '&daily=' + selectedMetric + '&timezone=auto';
-                    dbg('fetch', url);
+                    var isCur = currentYear === today.getFullYear(), archEnd = endDate, ft = [], fv = [], fDate = null, fIdx = null, times = [], vals = [];
+                    if (isCur) {
+                        var fu = 'https://api.open-meteo.com/v1/forecast?latitude=' + CITY.lat + '&longitude=' + CITY.lon + '&daily=' + selectedMetric + '&past_days=8&forecast_days=1&timezone=auto';
+                        dbg('fetch', 'маркер: поточний рік, останні дні з прогнозного API: ' + fu);
+                        var fr = await fetch(fu, { mode: 'cors' }).catch(function() { throw new Error('Мережева помилка або блокування запиту.'); });
+                        if (!fr.ok) throw new Error('Помилка сервера (прогнозне API) при отриманні останніх днів.');
+                        var fd = await fr.json();
+                        ft = fd.daily.time || []; fv = fd.daily[selectedMetric] || [];
+                        fDate = ft[ft.length - 1];
+                        archEnd = new Date(Date.parse(ft[0] + 'T00:00:00Z') - 86400000).toISOString().split('T')[0];
+                    }
+                    if (archEnd >= startDate) {
+                        var url = 'https://archive-api.open-meteo.com/v1/archive?latitude=' + CITY.lat + '&longitude=' + CITY.lon + '&start_date=' + startDate + '&end_date=' + archEnd + '&daily=' + selectedMetric + '&timezone=auto';
+                        dbg('fetch', url);
+                        var response = await fetch(url, { mode: 'cors' }).catch(function() { throw new Error('Мережева помилка або блокування запиту.'); });
+                        if (!response.ok) throw new Error('Помилка сервера при отриманні даних за ' + currentYear + ' рік.');
+                        var data = await response.json();
+                        times = (data.daily.time || []).slice(); vals = (data.daily[selectedMetric] || []).slice();
+                    } else dbg('fetch', 'маркер: архів не потрібен для ' + currentYear + ' (кінець архівної частини ' + archEnd + ' раніше за початок року)');
+                    if (isCur) {
+                        for (var q = 0; q < ft.length; q++) { if (ft[q].slice(0, 4) === String(currentYear)) { times.push(ft[q]); vals.push(fv[q]); } }
+                    }
 
-                    var response = await fetch(url, { mode: 'cors' }).catch(function() { throw new Error('Мережева помилка або блокування запиту.'); });
-                    if (!response.ok) throw new Error('Помилка сервера при отриманні даних за ' + currentYear + ' рік.');
-                    var data = await response.json();
-
-                    var times = data.daily.time || [], vals = data.daily[selectedMetric] || [], dailyData = [];
+                    var dailyData = [];
                     for (var j = 0; j < times.length; j++) {
                         if (times[j].slice(5) === '02-29') { dbg('leap', 'маркер: пропущено ' + times[j]); continue; }
                         dailyData.push(vals[j]);
+                        if (times[j] === fDate) fIdx = dailyData.length - 1;
                     }
-                    dbg('data', currentYear + ': отримано ' + vals.length + ' днів, у графіку ' + dailyData.length);
+                    dbg('data', currentYear + ': отримано ' + vals.length + ' днів, у графіку ' + dailyData.length + (fIdx !== null ? '; сьогодні (прогноз) ' + fDate + ' = ' + vals[times.indexOf(fDate)] + ', індекс ' + fIdx : ''));
 
-                    var mainColor = colors[(currentYear - startYear) % colors.length];
-                    datasets.push({
-                        label: currentYear.toString(),
-                        data: dailyData,
-                        borderColor: mainColor,
-                        backgroundColor: chartType === 'bar' ? withAlpha(mainColor, 0.8) : withAlpha(mainColor, 0.08),
-                        borderWidth: 2,
-                        pointRadius: 2,
-                        pointHoverRadius: 8,
-                        pointBackgroundColor: mainColor,
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 1,
-                        tension: 0.15,
-                        clip: false
-                    });
+                    datasets.push(makeDataset(currentYear.toString(), dailyData, colors[(currentYear - startYear) % colors.length], chartType, fIdx));
                 }
 
+                if (myLoad !== loadSeq) { dbg('load', 'маркер: застарілу відповідь відкинуто (' + reason + ')'); return; }
                 if (weatherChart) weatherChart.destroy();
 
                 var ctx = document.getElementById('weatherChart').getContext('2d');
@@ -517,7 +618,7 @@
                                         a.chart.data.datasets.forEach(function(ds, idx) {
                                             if (idx !== a.datasetIndex) {
                                                 var v = ds.data[a.dataIndex];
-                                                lines.push('  ' + ds.label + ': ' + ((v !== undefined && v !== null) ? v : '-'));
+                                                lines.push('  ' + ds.label + ': ' + ((v !== undefined && v !== null) ? v : '-') + (ds.fIdx === a.dataIndex ? ' (прогноз)' : ''));
                                             }
                                         });
                                         return lines;
@@ -529,7 +630,7 @@
                                     },
                                     label: function(ctx) {
                                         var v = ctx.raw !== undefined && ctx.raw !== null ? ctx.raw : '-';
-                                        return '▶ ' + ctx.dataset.label + ': ' + v + ' (активний)';
+                                        return '▶ ' + ctx.dataset.label + ': ' + v + ' (активний' + (ctx.dataset.fIdx === ctx.dataIndex ? ', прогноз' : '') + ')';
                                     }
                                 }
                             },
@@ -549,9 +650,9 @@
                 dbg('chart', 'побудовано: ' + chartType + ', роки: ' + selectedYears.join(', ') + ', параметр: ' + selectedMetric);
             } catch (error) {
                 console.error('[WeatherScope][error]', error);
-                alert(error.message);
+                if (myLoad === loadSeq) alert(error.message);
             } finally {
-                document.getElementById('loader').classList.add('hidden');
+                if (myLoad === loadSeq) document.getElementById('loader').classList.add('hidden');
             }
         }
 
@@ -560,7 +661,7 @@
             dbg('zoom', 'маркер: натиснуто "Скинути масштаб"');
             if (weatherChart) { weatherChart.resetZoom(); updateScrollbar(); }
         });
-        document.getElementById('metricSelect').addEventListener('change', function() { loadWeatherData('змінено параметр: ' + this.value); });
+        document.getElementById('metricSelect').addEventListener('change', function() { syncURL('зміна параметра'); loadWeatherData('змінено параметр: ' + this.value); });
         document.querySelectorAll('.year-checkbox').forEach(function(cb) {
             cb.addEventListener('change', function() { loadWeatherData('рік ' + cb.value + (cb.checked ? ' увімкнено' : ' вимкнено')); });
         });
@@ -659,7 +760,7 @@
             [wxCv, offCv].forEach(function (cv) { cv.width = wxW * dpr; cv.height = wxH * dpr; });
             wxCtx = wxCv.getContext('2d'); offCtx = offCv.getContext('2d');
             wxCtx.setTransform(dpr, 0, 0, dpr, 0, 0); offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            dbg('widget', 'маркер: змінився розмір віджета -> ' + wxW + 'x' + wxH);
+            dbg('widget', 'маркер: змінився розмір віджета -> ' + wxW + 'x' + wxH); measureText();
         }
         var CLOUD_RGB = { partly: '200,212,230', cloud: '180,194,214', rain: '135,152,180', storm: '105,116,145', snow: '220,230,244' };
         var CLOUD_A = { partly: .13, cloud: .15, rain: .18, storm: .24, snow: .16 };
@@ -678,24 +779,96 @@
             P.forEach(function (q) { puff(q.x - q.r * .1, q.y - q.r * .3, q.r * .7, .4, light); });
             return { cv: cv, w: W + 2 * pad, h: H + 2 * pad, v: 12 + Math.random() * 14, a: CLOUD_A[k] * (.8 + Math.random() * .4) };
         }
+        // ---------- небо: сонце/місяць за SunCalc, хмари поверх ----------
+        var TXT = [], CEL = null;
+        function measureText() {
+            var b = wxBox.getBoundingClientRect();
+            TXT = [document.querySelector('.wx-main'), document.getElementById('wxDays')].map(function (el) {
+                var r = el.getBoundingClientRect();
+                return { l: r.left - b.left - 24, r: r.right - b.left + 24, t: r.top - b.top - 24, b: r.bottom - b.top + 24 };
+            });
+        }
+        function moonArc(now, la, lo) {
+            var step = 600000, mp = function (ms) { return SunCalc.getMoonPosition(new Date(ms), la, lo).altitude; }, t0 = now.getTime(), a = mp(t0), i;
+            if (a <= 0) return null;
+            var rise = t0, set = t0, max = a;
+            for (i = 0; i < 110 && mp(rise - step) > 0; i++) rise -= step;
+            for (i = 0; i < 110 && mp(set + step) > 0; i++) set += step;
+            for (var ms = rise; ms <= set; ms += step) max = Math.max(max, mp(ms));
+            return { p: (t0 - rise) / Math.max(step, set - rise), a: a, max: max };
+        }
+        function phaseName(ph) {
+            return ph < .03 || ph > .97 ? 'новий' : ph < .22 ? 'молодий (зростає)' : ph < .28 ? 'перша чверть' : ph < .47 ? 'зростаючий' : ph < .53 ? 'повня' : ph < .72 ? 'спадаючий' : ph < .78 ? 'остання чверть' : 'старий (спадає)';
+        }
+        function updateCelestial(reason) {
+            if (typeof SunCalc === 'undefined') { CEL = null; dbg('sky', 'маркер: SunCalc не завантажено, сонце і місяць у запасному режимі (нерухомі)'); return; }
+            var now = new Date(), la = +CITY.lat, lo = +CITY.lon, tm = SunCalc.getTimes(now, la, lo), sp = SunCalc.getPosition(now, la, lo), mi = SunCalc.getMoonIllumination(now);
+            var rise = tm.sunrise.getTime(), set = tm.sunset.getTime(), n = now.getTime(), day = n >= rise && n <= set, msg;
+            CEL = { day: day, phase: mi.phase, moon: null };
+            if (day) {
+                var maxA = SunCalc.getPosition(tm.solarNoon, la, lo).altitude;
+                CEL.p = (n - rise) / (set - rise); CEL.altN = Math.min(1, Math.max(0, sp.altitude / maxA));
+                msg = 'день, сонце на ' + Math.round(CEL.p * 100) + '% шляху';
+            } else {
+                CEL.moon = moonArc(now, la, lo);
+                if (CEL.moon) { CEL.p = CEL.moon.p; CEL.altN = Math.min(1, Math.max(0, CEL.moon.a / CEL.moon.max)); msg = 'ніч, місяць на ' + Math.round(CEL.p * 100) + '% шляху, фаза: ' + phaseName(mi.phase); }
+                else msg = 'ніч, місяць під горизонтом (фаза: ' + phaseName(mi.phase) + ')';
+            }
+            measureText();
+            updateCelestial.n = (updateCelestial.n || 0) + 1;
+            if (reason.indexOf('таймер') !== 0 || updateCelestial.n % 20 === 0) dbg('sky', 'маркер: ' + reason + ' -> ' + msg + ' (місто ' + CITY.name + ')');
+        }
+        function drawMoon(c, x, y, R, phase, t) {
+            var f = (1 - Math.cos(phase * 2 * Math.PI)) / 2;
+            c.save(); c.translate(x, y); if (phase >= .5) c.scale(-1, 1);
+            c.fillStyle = 'rgba(148,163,184,.2)'; circ(c, 0, 0, R);
+            c.fillStyle = '#e0e7ff'; c.shadowColor = '#93c5fd'; c.shadowBlur = 8 + 6 * Math.sin(t * 1.5);
+            if (f > .985) circ(c, 0, 0, R);
+            else if (f > .015) {
+                c.beginPath(); c.moveTo(0, -R); c.arc(0, 0, R, -Math.PI / 2, Math.PI / 2, false);
+                c.ellipse(0, 0, R * Math.abs(1 - 2 * f), R, 0, Math.PI / 2, -Math.PI / 2, f < .5);
+                c.closePath(); c.fill();
+            }
+            c.restore();
+        }
         function drawWide(t) {
             var w = wxW, h = wxH, S = WX.S, k = WX.kind, c = wxCtx, o = offCtx, i;
             if (!w || !h) return;
             c.clearRect(0, 0, w, h); o.clearRect(0, 0, w, h);
-            if (k === 'sun' || k === 'partly') drawBody(c, 'sun', t, 90, h / 2, 1.2);
-            if (k === 'moon') drawBody(c, 'moon', t, 90, h / 2, 1.2);
-            if (k !== 'sun' && k !== 'moon') {
-                if (!S.sp || S.spk !== k) {
-                    S.sp = []; for (i = 0; i < (k === 'partly' ? 2 : 4); i++) S.sp.push(makeCloudSprite(k));
-                    S.spk = k; dbg('widget', 'маркер: створено ' + S.sp.length + ' м\'яких хмар для "' + k + '"');
+            var code = WX.code, cover = code <= 1 ? 0 : code === 2 ? 1 : 2, ck = cover === 0 ? null : cover === 1 ? 'partly' : k, geo = [];
+            if (ck) {
+                if (!S.sp || S.spk !== ck) {
+                    S.sp = []; for (i = 0; i < (ck === 'partly' ? 2 : 4); i++) S.sp.push(makeCloudSprite(ck));
+                    S.spk = ck; dbg('widget', 'маркер: створено ' + S.sp.length + ' хмар для "' + ck + '"');
                 }
                 var n = S.sp.length, span = w + 700;
                 for (i = 0; i < n; i++) {
-                    var sp = S.sp[i], sc = 1 + .04 * Math.sin(t * .15 + i), x = ((t * sp.v + i * span / n) % span) - 350, y = h * (.16 + ((i * 37) % 50) / 100) - sp.h / 2 + Math.sin(t * .2 + i) * 3;
-                    o.globalAlpha = sp.a; o.drawImage(sp.cv, x, y, sp.w * sc, sp.h * sc);
+                    var sp = S.sp[i], sc = 1 + .04 * Math.sin(t * .15 + i);
+                    geo.push({ sp: sp, x: ((t * sp.v + i * span / n) % span) - 350, y: h * (.16 + ((i * 37) % 50) / 100) - sp.h / 2 + Math.sin(t * .2 + i) * 3, dw: sp.w * sc, dh: sp.h * sc });
                 }
+            }
+            // небесне тіло: вдень лише сонце, вночі лише місяць
+            var body = null, bx = 90, by = h / 2, al = 1;
+            if (cover < 2) {
+                if (CEL) {
+                    body = CEL.day ? 'sun' : (CEL.moon ? 'moon' : null);
+                    if (body) { bx = 50 + CEL.p * (w - 100); by = h * .86 - CEL.altN * h * .62; al = body === 'sun' ? .35 + .65 * Math.sqrt(CEL.altN) : .5 + .5 * Math.sqrt(CEL.altN); }
+                } else body = (k === 'sun' || k === 'partly') ? 'sun' : (k === 'moon' ? 'moon' : null);
+            }
+            if (body) {
+                TXT.forEach(function (r) { if (bx > r.l && bx < r.r && by > r.t && by < r.b) al *= .85; });
+                geo.forEach(function (g) {
+                    var nx = (bx - (g.x + g.dw / 2)) / (g.dw * .33), ny = (by - (g.y + g.dh / 2)) / (g.dh * .15);
+                    al *= 1 - .55 * Math.max(0, 1 - nx * nx - ny * ny);
+                });
+                c.save(); c.globalAlpha = al;
+                if (body === 'sun') drawBody(c, 'sun', t, bx, by, 1.2); else drawMoon(c, bx, by, 17, CEL ? CEL.phase : .5, t);
+                c.restore();
+            }
+            if (ck) {
+                geo.forEach(function (g) { o.globalAlpha = g.sp.a; o.drawImage(g.sp.cv, g.x, g.y, g.dw, g.dh); });
                 o.globalAlpha = 1;
-                if (k === 'rain' || k === 'storm') {
+                if (cover === 2 && (k === 'rain' || k === 'storm')) {
                     o.strokeStyle = 'rgba(96,165,250,.8)'; o.lineWidth = 1.5; o.beginPath();
                     S.drops.forEach(function (d) {
                         d.y += d.v * .02; if (d.y > 1) { d.y = 0; d.x = Math.random(); }
@@ -703,16 +876,16 @@
                     });
                     o.stroke();
                 }
-                if (k === 'snow') {
+                if (cover === 2 && k === 'snow') {
                     o.fillStyle = '#fff';
                     S.flakes.forEach(function (f) { f.y += f.v * .01; if (f.y > 1) { f.y = 0; f.x = Math.random(); } circ(o, (f.x + Math.sin(t + f.p) * .01) * w, h * (.35 + .65 * f.y), 1.8); });
                 }
-                if (k === 'storm') {
+                if (cover === 2 && k === 'storm') {
                     if (t > S.nextBolt) { S.bolt = t + .18; S.nextBolt = t + 2 + Math.random() * 5; S.bx = .2 + Math.random() * .4; }
                     if (t < S.bolt) {
                         o.save(); o.strokeStyle = '#fef9c3'; o.shadowColor = '#fde047'; o.shadowBlur = 14; o.lineWidth = 2.5; o.beginPath();
-                        var bx = S.bx * w, by = h * .4;
-                        o.moveTo(bx, by); o.lineTo(bx - 8, by + 24); o.lineTo(bx + 4, by + 27); o.lineTo(bx - 7, by + 55); o.stroke(); o.restore();
+                        var lx = S.bx * w, ly = h * .4;
+                        o.moveTo(lx, ly); o.lineTo(lx - 8, ly + 24); o.lineTo(lx + 4, ly + 27); o.lineTo(lx - 7, ly + 55); o.stroke(); o.restore();
                     }
                 }
                 var g = o.createLinearGradient(0, 0, w, 0);
@@ -735,12 +908,14 @@
         var wxSeq = 0;
         async function refreshWidget(reason) {
             var my = ++wxSeq;
+            updateCelestial(reason);
             dbg('widget', 'маркер: ' + reason + ' -> ' + CITY.name);
             document.getElementById('wxTitle').textContent = 'Погода зараз: ' + CITY.name + ' (обране місто)';
             try {
                 var d = await getWx(CITY.lat, CITY.lon);
                 if (my !== wxSeq) { dbg('widget', 'маркер: застарілу відповідь відкинуто'); return; }
                 var cu = d.current, kind = wxKind(cu.weather_code, cu.is_day);
+                WX.code = cu.weather_code;
                 if (kind !== WX.kind) { WX.kind = kind; WX.S = mkState(110, 70); }
                 document.getElementById('wxTemp').textContent = Math.round(cu.temperature_2m) + '°C';
                 document.getElementById('wxDesc').textContent = KIND_TXT[kind];
@@ -750,7 +925,7 @@
                     var dt = new Date(d.daily.time[i] + 'T12:00'), k = wxKind(d.daily.weather_code[i], true);
                     html += '<div class="wx-day">' + DAYS_UA[dt.getDay()] + '<br>' + KIND_EMO[k] + '<br>' + Math.round(d.daily.temperature_2m_max[i]) + '° / ' + Math.round(d.daily.temperature_2m_min[i]) + '°</div>';
                 }
-                document.getElementById('wxDays').innerHTML = html;
+                document.getElementById('wxDays').innerHTML = html; measureText();
                 dbg('widget', 'малюнок: ' + kind + ' (код ' + cu.weather_code + ')');
             } catch (e) {
                 console.error('[WeatherScope][error]', e);
@@ -761,7 +936,7 @@
             try {
                 var d = await getWx(USER.lat, USER.lon), cu = d.current;
                 AV.kind = wxKind(cu.weather_code, cu.is_day); AV.S = AV.S || mkState();
-                avLabel.textContent = USER.name + '  ' + Math.round(cu.temperature_2m) + '°';
+                avLabel.textContent = USER.name + ' · ' + Math.round(cu.temperature_2m) + '°';
                 dbg('avatar', 'маркер: ' + reason + ' -> ' + AV.kind + ', місто користувача: ' + USER.name);
             } catch (e) { console.error('[WeatherScope][error]', e); }
         }
@@ -846,7 +1021,7 @@
             if (!A.on) return;
             var p = PROF[A.season], t = AC.currentTime;
             var rl = p.rain ? (Math.random() < .2 ? .02 : p.rain * (.4 + Math.random() * .9)) : 0, wl = p.wind * (.15 + Math.random());
-            A.rainG.gain.setTargetAtTime(rl * .5, t, 2.5); A.windG.gain.setTargetAtTime(wl * .6, t, 1.8); A.windF.frequency.setTargetAtTime(220 + wl * 700, t, 1.5);
+            A.rainG.gain.setTargetAtTime(rl * .25, t, 2.5); A.windG.gain.setTargetAtTime(wl * .6, t, 1.8); A.windF.frequency.setTargetAtTime(220 + wl * 700, t, 1.5);
             dbg('audio', 'маркер: хвиля змін, дощ=' + rl.toFixed(2) + ', вітер=' + wl.toFixed(2));
             A.wT = setTimeout(wander, 3500 + Math.random() * 6000);
         }
@@ -946,12 +1121,16 @@
         sizeBg(); bgCanvas.style.opacity = REDUCED ? 0 : 1;
         dbg('bg', REDUCED ? 'маркер: системний режим "зменшити рух" - фон вимкнено' : 'маркер: динамічний фон увімкнено постійно');
         setInterval(function () { refreshWidget('таймер 10 хв'); refreshAvatar('таймер 10 хв'); }, 600000);
+        setInterval(function () { updateCelestial('таймер 15 с'); }, 15000);
 
+        document.getElementById('tbVer').textContent = 'v' + VERSION;
+        dbg('version', 'маркер: версія сторінки ' + VERSION);
         initCities();
         tickClock(); setInterval(tickClock, 1000);
         locateUser();
         requestAnimationFrame(loop);
-        loadWeatherData('первинне завантаження сторінки');
+        if (PENDING_SEARCH) searchCity(PENDING_SEARCH).then(function (ok) { if (!ok) loadWeatherData('резервне завантаження: пошук міста з адреси не дав результату'); });
+        else loadWeatherData('первинне завантаження сторінки');
     </script>
 </body>
 </html>
