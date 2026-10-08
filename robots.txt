@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://antiruskontrol.github.io/WeatherInUkraine/
