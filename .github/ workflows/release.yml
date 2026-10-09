@@ -2,28 +2,26 @@ name: Створення архіву релізу
 
 on:
   release:
-    types: [published] # Скрипт спрацює в момент натискання кнопки "Publish release"
+    types: [published]
 
 jobs:
-  build:
+  upload-assets:
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      # 1. Завантажуємо код репозиторію
-      - name: Checkout code
+      # 1. Завантажуємо код проєкту
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Створюємо чистий ZIP-архів (без папки .git)
-      - name: Create ZIP Archive
+      # 2. Пакуємо чистий архів без системного сміття та важких відео
+      - name: Create ZIP archive
         run: |
           zip -r WeatherInUkraine.zip . -x "*.git*" "*demo.mp4*"
 
-      # 3. Автоматично завантажуємо його в Assets створеного релізу
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v2
-        with:
-          files: WeatherInUkraine.zip
+      # 3. Вбудована офіційна команда GitHub для прикріплення файлу до релізу
+      - name: Upload asset to release
+        run: gh release upload ${{ github.event.release.tag_name }} WeatherInUkraine.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
