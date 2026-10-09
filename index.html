@@ -1,9 +1,48 @@
 <!--
 ===================================================================
-Версія:       1.5.3 (WeatherScope Pro)
-Дата, час:    2026-10-08 07:56
+Версія:       1.6.2 (WeatherScope Pro)
+Дата, час:    2026-10-09 14:40
 Розробник:    Афтіпа Марко Оцтович
 -------------------------------------------------------------------
+Зміни 1.6.2 відносно 1.6.1 (нове сонце у віджеті й в аватарці):
+ 1. Сонце перемальовано: 28 тонких загострених променів (в аватарці 12), чергуються довгі й короткі,
+    УСІ вигнуті; довжина й вигин кожного повільно змінюються в своєму ритмі; повільне обертання вінця.
+    Вінтажні деталі: диск з градієнтом, тонке кільце навколо, пунктирне кільце (лише у великого сонця).
+ 2. Колір залежить від ЦИКЛУ ДНЯ (від сходу до заходу): перші й останні 5% - швидка зміна від
+    жовто-пурпурового до жовто-білого; решту 90% дня колір змінюється лише на 10%.
+    У віджеті цикл береться для обраного міста, в аватарці - для міста користувача.
+ 3. Піковий колір (жовто-білий) на 30% жовтіший (SUN_PEAK_YELLOW = 0,3).
+ 4. Усе сонце розмите на 20% радіуса диска (SUN_BLUR = 0,2) і на 10% прозоріше (SUN_ALPHA = 0,9).
+ 5. Яскравість +200% (SUN_BRIGHT = 3): адитивне змішування, майже біле ядро, сильне неонове сяйво,
+    що пульсує (гало, кільце, диск, промені).
+ 6. Дебаг-принти (мітка "sun"): тип (віджет / аватарка), цикл дня, колір, стадія, розмиття й яскравість.
+ 7. Назва файлу: index_v1.6.2_2026-10-09.html.
+
+Зміни 1.6.1 відносно 1.6.0 (стиль вікон):
+ 1. Прибрано світлі смуги-відблиски, що пливли по фону вікон.
+ 2. Рамка/фон вікна хвилиться лише трохи: WAVE_SCALE_BG 10 -> 4 px, хвилі повільніші.
+ 3. Хвилі на самому тексті лишено (WAVE_SCALE_TX = 3,5 px), похитування рядків лишено.
+ 4. Текст прозоріший на 30% (непрозорість 0,86 -> 0,60), заголовки з градієнтом теж.
+ 5. Свічення (ореол) навколо тексту сильніше й пульсує: два шари text-shadow (~8 і ~22 px);
+    у заголовків - через drop-shadow; кнопки з роками й дані за 29 лютого успадковують ореол.
+ 6. Дебаг-принт при відкритті вікон: маркер "рамка: хвилі 4 px, текст: хвилі 3,5 px, ореол увімкнено".
+ 7. Назва файлу: index_v1.6.1_2026-10-09.html.
+
+Зміни 1.6.0 відносно 1.5.3:
+ 1. Верхня панель (дата, "Атмосфера", сезон, версія) плавно зникає при прокрутці вниз (після 40 px)
+    і повертається нагорі сторінки.
+ 2. Рядок над графіком ("Підказка по графіку" + "Скинути масштаб") став "липким": прикріплюється до верху
+    екрана, поки видно графік.
+ 3. Виділений фіолетовий текст-підказка під графіком замінено кнопкою "Підказка по графіку" зі вікном:
+    навігація по графіку + розділ "29 лютого" (кнопки з роками, коли було 29 лютого; натискання показує
+    температуру (макс/мін/середня), опади й макс. вітер того дня для ОБРАНОГО міста; оновлюється при зміні міста).
+ 4. Напис версії в куті тепер кнопка: вікно з описом сайту (текст оптимізовано).
+ 5. Єдиний стиль вікон: повільна поява 1,5 с; фон до 69% прозорості, що "дихає" на +-5%;
+    напівпрозорий помаранчево-жовтий неоновий текст, рядки ледь похитуються в повітрі;
+    вікно й текст з ефектом проекції на хвилях води (анімований SVG-фільтр). Параметри - у блоці WIN_* на початку скрипта.
+ 6. Закриття вікон: Esc, клік поза вікном, хрестик. Дебаг-принти з описом маркера для всіх нових дій.
+ 7. Назва файлу містить версію і дату: index_v1.6.0_2026-10-09.html.
+
 Зміни 1.5.3 відносно 1.5.2:
  1. Додано іконку сайту: <link rel="icon" ... href="favicon.png"> та <link rel="apple-touch-icon" ...>.
     Файл favicon.png має лежати в одній папці з цією сторінкою.
@@ -77,7 +116,7 @@
  6. Динамічний прозорий фон "проліт крізь хмари" (вмикається разом з Атмосферою).
  7. Дебаг-принти: геолокація, погода, звук, грім, перемикання.
 
-Зміни 1.3.0 відносно 1.2.2:
+Зміни 1.3.0 відносно 1.2.1:
  1. Випадаюче меню "Оберіть місто": обласні центри та великі міста всіх областей (групи за областями).
  2. Пошук будь-якого іншого міста/села України за назвою (Enter) через геокодер Open-Meteo.
  3. Вибране місто запам'ятовується (localStorage); заголовок, title і дані оновлюються автоматично.
@@ -176,9 +215,65 @@
         .scrollbar-thumb.dragging { cursor:grabbing; }
         .loader { position:absolute; inset:0; background:rgba(3,7,18,.85); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:16px; color:#93c5fd; border-radius:8px; z-index:10; }
         .hidden { display:none !important; }
+        /* ---------- v1.6.0: верхня панель, липкий рядок, вікна-проекції на воді ---------- */
+        :root { --orange:#f97316; --orange-glow:0 0 6px #f97316, 0 0 18px rgba(249,115,22,.6); --swp:1.5; }
+        #topbar { transition:opacity .35s ease, transform .35s ease; }
+        #topbar.tb-hide { opacity:0; transform:translateY(-12px); pointer-events:none; }
+        #topbar.tb-hide > * { pointer-events:none; }
+        #topbar #tbVer { justify-self:end; background:transparent; border-color:transparent; color:rgba(243,244,246,.62); padding:0 10px; backdrop-filter:none; }
+        #topbar #tbVer:hover, #topbar #tbVer:focus-visible, #topbar #tbVer.on { color:#fdba74; border-color:var(--orange); box-shadow:var(--orange-glow); background:rgba(249,115,22,.08); outline:none; }
+        .chart-header { position:sticky; top:10px; z-index:40; padding:8px 10px; margin:-8px -10px 8px; border:1px solid transparent; border-radius:8px; transition:background .25s, border-color .25s; }
+        .chart-header.stuck { background:rgba(17,24,39,.72); border-color:rgba(75,85,99,.55); backdrop-filter:blur(6px); }
+        .hint-btn { color:hsl(268,54%,72%); }
+
+        .modal { position:fixed; inset:0; z-index:120; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(3,7,18,.55); backdrop-filter:blur(2px); visibility:hidden; opacity:0; transition:opacity .35s ease, visibility 0s .35s; }
+        .modal.show { visibility:visible; opacity:1; transition:opacity .35s ease, visibility 0s; }
+        .wave-win { position:relative; box-sizing:border-box; width:min(560px,100%); opacity:0; transition:opacity .3s ease; --wwmax:calc(100vh - 40px); }
+        .wave-win.show { opacity:1; transition:opacity 1.5s ease; }
+        #verWin { position:fixed; top:56px; right:20px; z-index:130; width:min(440px, calc(100vw - 40px)); visibility:hidden; --wwmax:calc(100vh - 90px); transition:opacity .3s ease, visibility 0s .3s; }
+        #verWin.show { visibility:visible; transition:opacity 1.5s ease, visibility 0s; }
+        .ww-bg { position:absolute; inset:0; border-radius:12px; background:linear-gradient(160deg, rgba(31,41,55,.92), rgba(17,24,39,.95)); border:1px solid rgba(249,115,22,.45); box-shadow:0 0 22px rgba(249,115,22,.28), inset 0 0 28px rgba(249,115,22,.1); backdrop-filter:blur(6px); filter:url(#waveBg); overflow:hidden; }
+        .ww-body { position:relative; box-sizing:border-box; max-height:var(--wwmax); overflow:auto; padding:24px 28px; color:rgba(251,191,36,.60); font-size:14px; line-height:1.6; text-shadow:0 0 6px rgba(249,115,22,.9), 0 0 18px rgba(249,115,22,.5); filter:url(#waveTx); animation:wwGlow 4.5s ease-in-out infinite; scrollbar-width:thin; scrollbar-color:rgba(249,115,22,.5) transparent; }
+        @keyframes wwGlow { 0%,100% { text-shadow:0 0 5px rgba(249,115,22,.8), 0 0 14px rgba(249,115,22,.4); } 50% { text-shadow:0 0 8px rgba(249,115,22,1), 0 0 22px rgba(249,115,22,.65); } }
+        .ww-body h2, .ww-body h3 { margin:0 0 8px; font-weight:500; background:linear-gradient(90deg,#fbbf24,#f97316); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; text-shadow:none; opacity:.65; filter:drop-shadow(0 0 7px rgba(249,115,22,.75)); }
+        .ww-body h2 { font-size:19px; padding-right:30px; }
+        .ww-body h3 { font-size:15px; margin-top:16px; }
+        .ww-body p { margin:0 0 10px; }
+        .ww-body ul { list-style:none; margin:0; padding:0; }
+        .ww-body li { position:relative; padding-left:16px; margin-bottom:3px; }
+        .ww-body li::before { content:''; position:absolute; left:0; top:.8em; width:8px; height:1px; background:var(--orange); box-shadow:0 0 6px var(--orange); }
+        .ww-ver { margin:14px 0 0; font-size:12px; opacity:.7; }
+        .ww-body :is(h2,h3,p,li,.ww-sw) { animation:wwSway1 7s ease-in-out infinite; }
+        .ww-body :is(h2,h3,p,li,.ww-sw):nth-child(3n+2) { animation-name:wwSway2; animation-duration:8.5s; animation-delay:-2s; }
+        .ww-body :is(h2,h3,p,li,.ww-sw):nth-child(3n) { animation-name:wwSway3; animation-duration:6.2s; animation-delay:-4s; }
+        @keyframes wwSway1 { 0%,100% { transform:translate(0,0) rotate(0); } 25% { transform:translate(calc(var(--swp)*1px), calc(var(--swp)*-.6px)) rotate(.25deg); } 50% { transform:translate(calc(var(--swp)*-.7px), calc(var(--swp)*.8px)) rotate(-.2deg); } 75% { transform:translate(calc(var(--swp)*.4px), calc(var(--swp)*.5px)) rotate(.15deg); } }
+        @keyframes wwSway2 { 0%,100% { transform:translate(0,0) rotate(0); } 30% { transform:translate(calc(var(--swp)*-1px), calc(var(--swp)*.7px)) rotate(-.25deg); } 60% { transform:translate(calc(var(--swp)*.8px), calc(var(--swp)*-.8px)) rotate(.2deg); } }
+        @keyframes wwSway3 { 0%,100% { transform:translate(0,0) rotate(0); } 35% { transform:translate(calc(var(--swp)*.6px), calc(var(--swp)*.9px)) rotate(.2deg); } 70% { transform:translate(calc(var(--swp)*-.9px), calc(var(--swp)*-.4px)) rotate(-.15deg); } }
+        .ww-x { position:absolute; top:10px; right:12px; width:30px; height:30px; padding:0; margin:0; background:transparent; border:none; color:rgba(251,191,36,.7); font-size:24px; line-height:1; cursor:pointer; text-shadow:inherit; }
+        .ww-x:hover, .ww-x:focus-visible { color:#fff; outline:none; }
+        #leapBtns { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 12px; }
+        .leap-btn { background:rgba(249,115,22,.08); color:rgba(251,191,36,.95); border:1px solid rgba(249,115,22,.5); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; text-shadow:inherit; transition:box-shadow .2s, border-color .2s, color .2s; }
+        .leap-btn:hover, .leap-btn:focus-visible, .leap-btn.on { border-color:var(--orange); box-shadow:var(--orange-glow); color:#fff; outline:none; }
+        #leapResult { min-height:20px; }
+        .leap-title { font-weight:500; margin-bottom:8px; }
+        .leap-grid { display:grid; grid-template-columns:1fr auto; gap:6px 16px; padding:10px 12px; background:rgba(0,0,0,.25); border:1px solid rgba(249,115,22,.3); border-radius:8px; }
+        .leap-grid span:nth-child(even) { text-align:right; color:#fde68a; font-variant-numeric:tabular-nums; }
+        @media (prefers-reduced-motion:reduce) { .ww-body, .ww-body :is(h2,h3,p,li,.ww-sw) { animation:none !important; } .wave-win.show, #verWin.show { transition-duration:.2s; } }
     </style>
 </head>
 <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <defs>
+            <filter id="waveBg" x="-8%" y="-8%" width="116%" height="116%">
+                <feTurbulence id="wtBg" type="fractalNoise" baseFrequency="0.008 0.02" numOctaves="2" seed="3" result="n"/>
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+            <filter id="waveTx" x="-4%" y="-4%" width="108%" height="108%">
+                <feTurbulence id="wtTx" type="fractalNoise" baseFrequency="0.011 0.028" numOctaves="2" seed="7" result="n"/>
+                <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+        </defs>
+    </svg>
     <canvas id="bgCanvas"></canvas>
     <div id="flash"></div>
     <div id="topbar">
@@ -188,8 +283,50 @@
             <select id="seasonSel" title="Сезон звуків (для тесту)"><option value="auto">Сезон: авто</option><option value="autumn">Осінь</option><option value="winter">Зима</option><option value="spring">Весна</option><option value="summer">Літо</option></select>
             <button type="button" id="thunderBtn" title="Тестовий грім">⚡</button>
         </div>
-        <span id="tbVer"></span>
+        <button type="button" id="tbVer" aria-haspopup="dialog" aria-expanded="false"></button>
     </div>
+    <div class="wave-win" id="verWin" role="dialog" aria-labelledby="verTitle">
+        <div class="ww-bg"></div>
+        <div class="ww-body">
+            <button type="button" class="ww-x" id="verClose" aria-label="Закрити">&times;</button>
+            <h2 id="verTitle">WeatherInUkraine</h2>
+            <p>Інтерактивний інструмент порівняльного кліматичного аналізу: показує історичні дані та поточний прогноз для міст України у вигляді графіків. Дані завантажуються в реальному часі з Open-Meteo.</p>
+            <h3>Налаштування</h3>
+            <ul>
+                <li>Місто: будь-який населений пункт України (наприклад, Київ).</li>
+                <li>Параметр: максимальна, мінімальна й середня температура (°C), опади (мм), максимальна швидкість вітру (км/год).</li>
+                <li>Роки: порівняння кількох років на одному графіку.</li>
+            </ul>
+            <h3>Графік</h3>
+            <ul>
+                <li>Вигляд добирається автоматично: опади - стовпчики, температура й вітер - лінії.</li>
+                <li>Масштаб - колесом миші; прокрутка - затисканням графіка або повзунком унизу.</li>
+                <li>Кнопка «Скинути масштаб» повертає початковий вигляд.</li>
+            </ul>
+            <p class="ww-ver">Версія <span id="verWinVer"></span></p>
+        </div>
+    </div>
+
+    <div class="modal" id="hintModal">
+        <div class="wave-win" id="hintWin" role="dialog" aria-modal="true" aria-labelledby="hintTitle">
+            <div class="ww-bg"></div>
+            <div class="ww-body">
+                <button type="button" class="ww-x" id="hintClose" aria-label="Закрити">&times;</button>
+                <h2 id="hintTitle">Як користуватися графіком</h2>
+                <ul>
+                    <li>Колесо миші - масштаб (на телефоні - щипок двома пальцями).</li>
+                    <li>Затисніть графік або повзунок унизу й тягніть - прокрутка.</li>
+                    <li>Кнопка «Скинути масштаб» повертає весь рік.</li>
+                    <li>Порожній маркер і пунктир - це прогноз на сьогодні, а не підсумок дня.</li>
+                </ul>
+                <h3>29 лютого</h3>
+                <p>На графіку 365 днів: 29 лютого пропущено, щоб однакові дати різних років збігалися. Оберіть рік, щоб побачити всі показники того дня для міста <b id="leapCity"></b>:</p>
+                <div id="leapBtns"></div>
+                <div id="leapResult"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <h1 class="site-title">
             <svg class="title-icon" viewBox="0 0 32 32" width="30" height="30" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -241,7 +378,7 @@
         </div>
 
         <div class="chart-header">
-            <span style="font-size:12px; color:hsl(268,54%,72%);">💡 Колесо миші — масштаб, затисніть графік або повзунок внизу — прокрутка. 29 лютого пропущено, щоб дати збігалися. Порожній маркер - прогноз на сьогодні.</span>
+            <button type="button" id="hintBtn" class="reset-zoom-btn hint-btn">💡 Підказка по графіку</button>
             <button type="button" id="resetZoomBtn" class="reset-zoom-btn">🔍 Скинути масштаб</button>
         </div>
 
@@ -259,7 +396,7 @@
 
     <script>
         var CITY = { name: 'Київ', lat: '50.4501', lon: '30.5234' };
-        var VERSION = '1.5.3'; // оновлювати разом із шапкою файлу
+        var VERSION = '1.6.2'; // оновлювати разом із шапкою файлу
         var DEBUG = true;
         function dbg(marker, info) { if (DEBUG) console.log('[WeatherScope][' + marker + ']', info === undefined ? '' : info); }
 
@@ -269,6 +406,7 @@
             document.title = 'Порівняння погоди: ' + city.name + ' по днях';
             dbg('setCity', 'причина: ' + reason + ' -> ' + city.name + ' (' + city.lat + ', ' + city.lon + ')');
             refreshWidget('зміна міста: ' + reason);
+            if (typeof refreshLeap === 'function') refreshLeap('зміна міста: ' + reason);
         }
 
 
@@ -685,7 +823,7 @@
 
         function wxKind(c, day) {
             if (c <= 1) return day ? 'sun' : 'moon';
-            if (c >= 1 && c <= 3) return day ? 'partly' : 'cloud'; // 1, 2, 3 - Мінлива хмарність (Сонце за хмарою)
+            if (c === 2) return day ? 'partly' : 'cloud';
             if (c <= 48) return 'cloud';
             if (c <= 67 || (c >= 80 && c <= 82)) return 'rain';
             if (c <= 77 || c === 85 || c === 86) return 'snow';
@@ -700,14 +838,78 @@
         function circ(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fill(); }
         function cloudShape(c, x, y, s, col) { c.fillStyle = col; circ(c, x, y, 10 * s); circ(c, x + 12 * s, y - 7 * s, 13 * s); circ(c, x + 26 * s, y, 10 * s); c.fillRect(x, y, 26 * s, 10 * s); }
 
-        function drawBody(c, kind, t, x, y, u) {
+        // ---------- v1.6.2: нове сонце (параметри - змінюйте тут) ----------
+        var SUN_BLUR = 0.2;         // розмиття: частка радіуса диска (0,2 = 20%)
+        var SUN_BRIGHT = 3;         // яскравість (3 = +200%)
+        var SUN_ALPHA = 0.9;        // загальна непрозорість сонця (0,9 = на 10% прозоріше)
+        var SUN_PEAK_YELLOW = 0.3;  // наскільки жовтіший піковий колір (0,3 = на 30%)
+        function sunHex(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+        function sunMix(a, b, t) { var p = typeof a === 'string' ? sunHex(a) : a, q = typeof b === 'string' ? sunHex(b) : b; return [Math.round(p[0] + (q[0] - p[0]) * t), Math.round(p[1] + (q[1] - p[1]) * t), Math.round(p[2] + (q[2] - p[2]) * t)]; }
+        function sunRgba(v, a) { return 'rgba(' + v[0] + ',' + v[1] + ',' + v[2] + ',' + a + ')'; }
+        function sunPeak(h) { return sunMix(h, '#ffd60a', SUN_PEAK_YELLOW); }
+        var SUN_K = [
+            { a: 0,  core: sunHex('#ffd426'), rim: sunHex('#c026d3'), ray: sunHex('#ffd02e'), tip: sunHex('#c026d3'), halo: sunHex('#c026d3') },
+            { a: .45, core: sunHex('#ffe55a'), rim: sunHex('#e879f9'), ray: sunHex('#ffe066'), tip: sunHex('#f0abfc'), halo: sunHex('#e879f9') },
+            { a: .9, core: sunPeak('#fff6c4'), rim: sunPeak('#fde68a'), ray: sunPeak('#fff2a8'), tip: sunPeak('#fde047'), halo: sunPeak('#fde68a') },
+            { a: 1,  core: sunPeak('#fffdf0'), rim: sunPeak('#fef3c7'), ray: sunPeak('#fffbe0'), tip: sunPeak('#fef08a'), halo: sunPeak('#fef3c7') }
+        ];
+        function sunPal(s) {
+            var i = 0, o = {}, k, t;
+            while (i < 2 && s > SUN_K[i + 1].a) i++;
+            t = (s - SUN_K[i].a) / (SUN_K[i + 1].a - SUN_K[i].a);
+            ['core', 'rim', 'ray', 'tip', 'halo'].forEach(function (key) { o[key] = sunMix(SUN_K[i][key], SUN_K[i + 1][key], t); });
+            return o;
+        }
+        // p - цикл дня (0 схід ... 1 захід); перші й останні 5% - швидка зміна, решта 90% - лише 10% зміни
+        function sunS(p) { var e = Math.min(p, 1 - p); if (e < .05) { var x = e / .05; return .9 * x * x * (3 - 2 * x); } return .9 + .1 * ((e - .05) / .45); }
+        var sunDbgKeys = {};
+        function drawSunBody(c, t, x, y, u, prog) {
+            if (prog === undefined || prog === null || isNaN(prog)) prog = .5;
+            prog = Math.max(0, Math.min(1, prog));
+            var s = sunS(prog), p = sunPal(s), R = 13 * u * (1 + .14 * (1 - s)), big = u > .8, N = big ? 28 : 12, gs = big ? 1 : .4;
+            var pulse = .5 + .5 * Math.sin(t * 1.6), gb = 1 + SUN_BRIGHT * .3, i, tag = big ? 'віджет' : 'аватарка';
+            var key = Math.round(s * 20) + ':' + (prog < .05 || prog > .95 ? 1 : 0);
+            if (sunDbgKeys[tag] !== key) {
+                sunDbgKeys[tag] = key;
+                dbg('sun', 'маркер: сонце (' + tag + ') цикл дня ' + Math.round(prog * 100) + '%, колір s=' + s.toFixed(2) + ', стадія: ' + (prog < .05 || prog > .95 ? 'швидка зміна (схід/захід)' : 'жовто-біле') + ', розмиття ' + SUN_BLUR + ', яскравість ' + SUN_BRIGHT + ', промінів ' + N);
+            }
+            c.save(); c.translate(x, y);
+            c.globalAlpha = c.globalAlpha * SUN_ALPHA; c.globalCompositeOperation = 'lighter';
+            if ('filter' in c) c.filter = 'blur(' + (R * SUN_BLUR).toFixed(1) + 'px)';
+            var hg = c.createRadialGradient(0, 0, R * .6, 0, 0, R * (3.4 + .5 * pulse));
+            hg.addColorStop(0, sunRgba(p.halo, Math.min(1, (.45 + (.22 - .45) * s) * (.8 + .3 * pulse) * SUN_BRIGHT * .6))); hg.addColorStop(1, sunRgba(p.halo, 0));
+            c.fillStyle = hg; c.fillRect(-R * 5, -R * 5, R * 10, R * 10);
+            for (i = 0; i < N; i++) {
+                var a = i / N * 6.2832 + t * .045, lg = i % 2 === 0, vary = 1 + .26 * Math.sin(t * 1.3 + i * 1.7) + .12 * Math.sin(t * .7 + i * 3.1);
+                var base = lg ? (R * 1.7 + (i % 4 === 0 ? R * .45 : 0)) : R * .85, L = base * vary * (1 + .1 * (1 - s)), r0 = R + R * .36, w = (lg ? 2.3 : 1.5) * (R / 30) * (big ? 1 : 1.6);
+                var off = Math.sin(t * 1.6 + i * 2.3) * (lg ? R * .24 : R * .12) + (lg ? (i % 4 === 0 ? R * .12 : -R * .1) : 0);
+                c.save(); c.rotate(a);
+                var g = c.createLinearGradient(r0, 0, r0 + L, 0); g.addColorStop(0, sunRgba(p.ray, 1)); g.addColorStop(.6, sunRgba(p.ray, .8)); g.addColorStop(1, sunRgba(p.tip, 0));
+                c.fillStyle = g; c.shadowColor = sunRgba(p.halo, .9); c.shadowBlur = (6 + 6 * pulse) * gs * gb;
+                c.beginPath(); c.moveTo(r0, -w); c.quadraticCurveTo(r0 + L * .5, off - w * .5, r0 + L, off * .6); c.quadraticCurveTo(r0 + L * .5, off + w * .5, r0, w); c.closePath(); c.fill();
+                c.restore();
+            }
+            c.shadowColor = sunRgba(p.rim, 1); c.shadowBlur = (14 + 18 * pulse) * gs * gb; c.lineWidth = 1.6; c.strokeStyle = sunRgba(p.rim, .95);
+            c.beginPath(); c.arc(0, 0, R + R * .2, 0, 6.2832); c.stroke(); c.shadowBlur = 0;
+            if (big) { c.setLineDash([2, 5]); c.strokeStyle = sunRgba(p.rim, .5); c.lineWidth = 1; c.beginPath(); c.arc(0, 0, R + R * .55, 0, 6.2832); c.stroke(); c.setLineDash([]); }
+            var dg = c.createRadialGradient(0, 0, R * .05, 0, 0, R);
+            dg.addColorStop(0, sunRgba(sunMix('#ffffff', p.core, .3), 1)); dg.addColorStop(.5, sunRgba(p.core, 1)); dg.addColorStop(1, sunRgba(p.rim, 1));
+            c.fillStyle = dg; c.shadowColor = sunRgba(p.core, 1); c.shadowBlur = (18 + 16 * pulse) * gs * gb;
+            c.beginPath(); c.arc(0, 0, R, 0, 6.2832); c.fill();
+            c.shadowBlur = 0; c.fillStyle = sunRgba(p.core, .6); c.beginPath(); c.arc(0, 0, R * .8, 0, 6.2832); c.fill();
+            c.restore();
+        }
+        // цикл дня для міста користувача (аватарка): 0 схід ... 1 захід
+        function userDayProgress() {
+            if (typeof SunCalc === 'undefined') return .5;
+            var now = new Date(), tm = SunCalc.getTimes(now, +USER.lat, +USER.lon), a = tm.sunrise.getTime(), b = tm.sunset.getTime(), n = now.getTime();
+            if (!(b > a)) return .5;
+            return Math.max(0, Math.min(1, (n - a) / (b - a)));
+        }
+
+        function drawBody(c, kind, t, x, y, u, prog) {
             if (kind === 'sun') {
-                var pu = .5 + .5 * Math.sin(t * 2), neon = '#facc15';
-                c.save(); c.translate(x, y); c.rotate(t * .35);
-                c.strokeStyle = neon; c.fillStyle = 'rgba(250,204,21,.85)'; c.lineWidth = 3 * u; c.lineCap = 'round';
-                c.shadowColor = neon; c.shadowBlur = (6 + 16 * pu) * u;
-                for (var i = 0; i < 8; i++) { c.rotate(Math.PI / 4); c.beginPath(); c.moveTo(0, 19 * u); c.lineTo(0, 27 * u); c.stroke(); }
-                circ(c, 0, 0, 13 * u); c.restore();
+                drawSunBody(c, t, x, y, u, prog);
             } else {
                 c.save(); c.shadowColor = '#93c5fd'; c.shadowBlur = (8 + 8 * Math.sin(t * 1.5)) * u; c.fillStyle = '#e0e7ff'; circ(c, x, y, 18 * u);
                 c.globalCompositeOperation = 'destination-out'; c.shadowBlur = 0; circ(c, x + 9 * u, y - 5 * u, 16 * u); c.restore();
@@ -717,7 +919,7 @@
         function drawWx(c, w, h, kind, t, S) {
             c.clearRect(0, 0, w, h);
             var u = Math.min(w, h) / 100, cx = w / 2, cy = h * .42, neon = '#facc15', i;
-            if (kind === 'sun' || kind === 'partly') drawBody(c, 'sun', t, kind === 'sun' ? cx : cx - 16 * u, kind === 'sun' ? cy : cy - 8 * u, u);
+            if (kind === 'sun' || kind === 'partly') drawBody(c, 'sun', t, kind === 'sun' ? cx : cx - 16 * u, kind === 'sun' ? cy : cy - 8 * u, u, AV.p);
             if (kind === 'moon') drawBody(c, 'moon', t, cx, cy, u);
             if (kind === 'partly' || kind === 'cloud' || kind === 'rain' || kind === 'snow' || kind === 'storm') {
                 if (!S.sp || S.spk !== kind) {
@@ -863,7 +1065,7 @@
                     al *= 1 - .55 * Math.max(0, 1 - nx * nx - ny * ny);
                 });
                 c.save(); c.globalAlpha = al;
-                if (body === 'sun') drawBody(c, 'sun', t, bx, by, 1.2); else drawMoon(c, bx, by, 17, CEL ? CEL.phase : .5, t);
+                if (body === 'sun') drawBody(c, 'sun', t, bx, by, 1.2, (CEL && CEL.day) ? CEL.p : .5); else drawMoon(c, bx, by, 17, CEL ? CEL.phase : .5, t);
                 c.restore();
             }
             if (ck) {
@@ -936,7 +1138,7 @@
         async function refreshAvatar(reason) {
             try {
                 var d = await getWx(USER.lat, USER.lon), cu = d.current;
-                AV.kind = wxKind(cu.weather_code, cu.is_day); AV.S = AV.S || mkState();
+                AV.kind = wxKind(cu.weather_code, cu.is_day); AV.S = AV.S || mkState(); AV.p = userDayProgress();
                 avLabel.textContent = USER.name + ' · ' + Math.round(cu.temperature_2m) + '°';
                 dbg('avatar', 'маркер: ' + reason + ' -> ' + AV.kind + ', місто користувача: ' + USER.name);
             } catch (e) { console.error('[WeatherScope][error]', e); }
@@ -1122,7 +1324,134 @@
         sizeBg(); bgCanvas.style.opacity = REDUCED ? 0 : 1;
         dbg('bg', REDUCED ? 'маркер: системний режим "зменшити рух" - фон вимкнено' : 'маркер: динамічний фон увімкнено постійно');
         setInterval(function () { refreshWidget('таймер 10 хв'); refreshAvatar('таймер 10 хв'); }, 600000);
-        setInterval(function () { updateCelestial('таймер 15 с'); }, 15000);
+        setInterval(function () { updateCelestial('таймер 15 с'); AV.p = userDayProgress(); }, 15000);
+
+        // ---------- v1.6.0: параметри вікон (змінюйте тут) ----------
+        var WIN_OPACITY = 0.69;     // прозорість фону вікон (0-1)
+        var WIN_BREATH = 0.05;      // амплітуда "дихання" прозорості (+-)
+        var WIN_FADE_MS = 1500;     // тривалість повільної появи (задано і в CSS: .wave-win.show, 1.5s)
+        var WAVE_SCALE_BG = 4;      // сила хвиль для рамки/фону вікна (px)
+        var WAVE_SCALE_TX = 3.5;    // сила хвиль для тексту (px)
+        var SWAY_PX = 1.5;          // амплітуда похитування рядків (px)
+        document.documentElement.style.setProperty('--swp', SWAY_PX);
+        document.querySelector('#waveBg feDisplacementMap').setAttribute('scale', WAVE_SCALE_BG);
+        document.querySelector('#waveTx feDisplacementMap').setAttribute('scale', WAVE_SCALE_TX);
+        dbg('win', 'маркер: параметри вікон -> прозорість ' + WIN_OPACITY + ' +-' + WIN_BREATH + ', поява ' + WIN_FADE_MS + ' мс, хвилі ' + WAVE_SCALE_BG + '/' + WAVE_SCALE_TX + ', похитування ' + SWAY_PX + ' px');
+
+        // ---------- керування вікнами та анімація хвиль ----------
+        var wtBg = document.getElementById('wtBg'), wtTx = document.getElementById('wtTx');
+        var verWin = document.getElementById('verWin'), hintWin = document.getElementById('hintWin'), hintModal = document.getElementById('hintModal');
+        var tbVerBtn = document.getElementById('tbVer');
+        var openWins = {}, waveRaf = 0, lastFx = 0;
+        function waveTick(now) {
+            var keys = Object.keys(openWins);
+            if (!keys.length) { waveRaf = 0; return; }
+            var t = now / 1000;
+            if (!REDUCED && now - lastFx > 50) {
+                lastFx = now;
+                wtBg.setAttribute('baseFrequency', (0.008 + 0.002 * Math.sin(t * .3)).toFixed(5) + ' ' + (0.02 + 0.005 * Math.cos(t * .22)).toFixed(5));
+                wtTx.setAttribute('baseFrequency', (0.011 + 0.003 * Math.sin(t * .6 + 1)).toFixed(5) + ' ' + (0.028 + 0.006 * Math.cos(t * .5)).toFixed(5));
+            }
+            keys.forEach(function (k) {
+                var o = openWins[k], v = WIN_OPACITY + (REDUCED ? 0 : WIN_BREATH * Math.sin(t * 1.1 + o.ph));
+                o.bg.style.opacity = Math.max(0, Math.min(1, v)).toFixed(3);
+            });
+            waveRaf = requestAnimationFrame(waveTick);
+        }
+        function winShow(id, win, overlay, reason) {
+            if (openWins[id]) return;
+            openWins[id] = { bg: win.querySelector('.ww-bg'), ph: Math.random() * 6 };
+            win.classList.add('show'); if (overlay) overlay.classList.add('show');
+            if (!waveRaf) waveRaf = requestAnimationFrame(waveTick);
+            dbg('win', 'маркер: вікно "' + id + '" відкрито - ' + reason + ' | рамка: хвилі ' + WAVE_SCALE_BG + ' px, текст: хвилі ' + WAVE_SCALE_TX + ' px, ореол увімкнено, смуги фону вимкнено');
+        }
+        function winHide(id, win, overlay, reason) {
+            if (!openWins[id]) return;
+            delete openWins[id];
+            win.classList.remove('show'); if (overlay) overlay.classList.remove('show');
+            dbg('win', 'маркер: вікно "' + id + '" закрито - ' + reason);
+        }
+        function verOpen(reason) { document.getElementById('verWinVer').textContent = VERSION; winShow('ver', verWin, null, reason); tbVerBtn.classList.add('on'); tbVerBtn.setAttribute('aria-expanded', 'true'); }
+        function verClose(reason) { winHide('ver', verWin, null, reason); tbVerBtn.classList.remove('on'); tbVerBtn.setAttribute('aria-expanded', 'false'); }
+        function hintOpen(reason) { verClose('відкрито вікно підказки'); document.getElementById('leapCity').textContent = CITY.name; winShow('hint', hintWin, hintModal, reason); }
+        function hintClose(reason) { winHide('hint', hintWin, hintModal, reason); }
+
+        tbVerBtn.addEventListener('click', function (e) { e.stopPropagation(); if (openWins.ver) verClose('повторний клік по версії'); else verOpen('клік по версії v' + VERSION); });
+        document.getElementById('verClose').addEventListener('click', function () { verClose('хрестик'); });
+        document.getElementById('hintBtn').addEventListener('click', function () { hintOpen('клік по кнопці "Підказка по графіку"'); });
+        document.getElementById('hintClose').addEventListener('click', function () { hintClose('хрестик'); });
+        hintModal.addEventListener('click', function (e) { if (e.target === hintModal) hintClose('клік поза вікном'); });
+        document.addEventListener('click', function (e) { if (openWins.ver && !verWin.contains(e.target) && e.target !== tbVerBtn) verClose('клік поза вікном'); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { hintClose('Esc'); verClose('Esc'); } });
+
+        // ---------- верхня панель зникає при прокрутці; рядок над графіком "липкий" ----------
+        var tbEl = document.getElementById('topbar'), chHead = document.querySelector('.chart-header'), tbHidden = false, chStuck = false;
+        function onPageScroll() {
+            var y = window.scrollY || document.documentElement.scrollTop || 0, hide = y > 40;
+            if (hide !== tbHidden) {
+                tbHidden = hide; tbEl.classList.toggle('tb-hide', hide);
+                dbg('topbar', 'маркер: верхню панель ' + (hide ? 'сховано' : 'показано') + ' (прокрутка ' + Math.round(y) + ' px)');
+                if (hide) verClose('верхня панель сховалась при прокрутці');
+            }
+            var stuck = chHead.getBoundingClientRect().top <= 11 && y > 0;
+            if (stuck !== chStuck) {
+                chStuck = stuck; chHead.classList.toggle('stuck', stuck);
+                dbg('sticky', 'маркер: рядок "Підказка / Скинути масштаб" ' + (stuck ? 'прикріплено до верху екрана' : 'відкріплено (на своєму місці)'));
+            }
+        }
+        window.addEventListener('scroll', onPageScroll, { passive: true });
+        onPageScroll();
+
+        // ---------- 29 лютого: кнопки з роками та дані за день ----------
+        var leapSeq = 0, leapActive = null, leapBox = document.getElementById('leapBtns');
+        function leapYears() {
+            var out = [], now = new Date();
+            for (var y = startYear; y <= endYear; y++) { var d = new Date(y, 1, 29); if (d.getMonth() === 1 && d <= now) out.push(y); }
+            return out;
+        }
+        leapYears().forEach(function (y) {
+            var b = document.createElement('button');
+            b.type = 'button'; b.className = 'leap-btn'; b.setAttribute('data-y', y); b.textContent = '29 лютого ' + y;
+            b.addEventListener('click', function () { loadLeap(y, 'клік по кнопці ' + y); });
+            leapBox.appendChild(b);
+        });
+        dbg('leap', 'маркер: роки з 29 лютого у діапазоні: ' + leapYears().join(', '));
+        function fmtV(v) { return (v === null || v === undefined) ? '—' : (Math.round(v * 10) / 10).toString().replace('.', ','); }
+        function refreshLeap(reason) {
+            document.getElementById('leapCity').textContent = CITY.name;
+            if (leapActive !== null && openWins.hint) loadLeap(leapActive, reason);
+        }
+        async function loadLeap(year, reason) {
+            var my = ++leapSeq; leapActive = year;
+            Array.prototype.forEach.call(leapBox.children, function (b) { b.classList.toggle('on', b.getAttribute('data-y') === String(year)); });
+            var res = document.getElementById('leapResult'); res.textContent = 'Завантаження...';
+            var date = year + '-02-29';
+            var url = 'https://archive-api.open-meteo.com/v1/archive?latitude=' + CITY.lat + '&longitude=' + CITY.lon + '&start_date=' + date + '&end_date=' + date + '&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,wind_speed_10m_max&timezone=auto';
+            dbg('leap', 'маркер спрацювання: ' + reason + ' -> ' + url);
+            try {
+                var r = await fetch(url, { mode: 'cors' });
+                if (!r.ok) throw new Error('помилка сервера ' + r.status);
+                var d = await r.json();
+                if (my !== leapSeq) { dbg('leap', 'маркер: застарілу відповідь відкинуто (' + reason + ')'); return; }
+                var dd = d.daily || {};
+                var rows = [['Максимальна температура', 'temperature_2m_max', '°C'], ['Мінімальна температура', 'temperature_2m_min', '°C'], ['Середня температура', 'temperature_2m_mean', '°C'], ['Опади', 'precipitation_sum', 'мм'], ['Максимальна швидкість вітру', 'wind_speed_10m_max', 'км/год']];
+                res.textContent = '';
+                var t = document.createElement('div'); t.className = 'leap-title'; t.textContent = CITY.name + ', 29 лютого ' + year; res.appendChild(t);
+                var g = document.createElement('div'); g.className = 'leap-grid';
+                rows.forEach(function (row) {
+                    var v = dd[row[1]] ? dd[row[1]][0] : null;
+                    var a = document.createElement('span'); a.textContent = row[0];
+                    var b = document.createElement('span'); b.textContent = fmtV(v) + (v === null || v === undefined ? '' : ' ' + row[2]);
+                    g.appendChild(a); g.appendChild(b);
+                });
+                res.appendChild(g);
+                dbg('leap', 'маркер: показано дані за ' + date + ' для ' + CITY.name);
+            } catch (e) {
+                if (my !== leapSeq) return;
+                res.textContent = 'Не вдалося отримати дані: ' + e.message;
+                dbg('leap', 'маркер: помилка завантаження - ' + e.message);
+            }
+        }
 
         document.getElementById('tbVer').textContent = 'v' + VERSION;
         dbg('version', 'маркер: версія сторінки ' + VERSION);
