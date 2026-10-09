@@ -685,7 +685,7 @@
 
         function wxKind(c, day) {
             if (c <= 1) return day ? 'sun' : 'moon';
-            if (c === 2) return day ? 'partly' : 'cloud';
+            if (c >= 1 && c <= 3) return day ? 'partly' : 'cloud'; // 1, 2, 3 - Мінлива хмарність (Сонце за хмарою)
             if (c <= 48) return 'cloud';
             if (c <= 67 || (c >= 80 && c <= 82)) return 'rain';
             if (c <= 77 || c === 85 || c === 86) return 'snow';
