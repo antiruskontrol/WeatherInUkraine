@@ -1,9 +1,63 @@
 <!--
 ===================================================================
-Версія:       1.6.2 (WeatherScope Pro)
-Дата, час:    2026-10-09 14:40
+Версія:       1.6.7 (WeatherScope Pro)
+Дата, час:    2026-10-10 08:27
 Розробник:    Афтіпа Марко Оцтович
 -------------------------------------------------------------------
+Зміни 1.6.7 відносно 1.6.6:
+ 1. Сонце на аватарці: прибрано квадратний фон. Спрайт тепер має круглу маску з плавним згасанням прозорості
+    до країв (AVATAR_SUN_FADE = 0,62 - де починається згасання), полотно спрайта збільшено (запас 6,5 R).
+ 2. Підвал сайту: третій і останній рядок - пошта antiruskontrol@ukr.net (посилання mailto:, неонове світіння,
+    підсилюється при наведенні).
+ 3. Меню опису "Antirus-Control": прибрано паузу - спливає ОДРАЗУ при наведенні (LOGO_POP_DELAY = 0),
+    проявляється за 0,75 с (LOGO_POP_FADE_MS = 750).
+ 4. Клік по лого - МИТТЄВИЙ перехід на сайт https://antiruskontrol.github.io/antirus-control/ (нова вкладка).
+    На сенсорних екранах (немає наведення) перший дотик показує меню, другий - переходить.
+ 5. Дебаг-принти: "sun" (причина перемальовування спрайта), "footer", "logo" (наведення, клік-перехід).
+ 6. Назва файлу: index_v1.6.7_2026-10-10.html.
+
+Зміни 1.6.6 відносно 1.6.5:
+ 1. Прапор України (SVG 22x15 px, синя смуга зверху, жовта знизу, скруглені кути, тонка рамка, тепле сяйво)
+    у верхньому лівому куті між піном і словом "Київ"; ледь помітне хвильове погойдування
+    (FLAG_WAVE = 2,2; 0 = нерухомий; вимикається при "зменшити рух" і коли верхня панель схована).
+ 2. Сонце на аватарці біля курсора стало СТАТИЧНИМ (стиль збережено: колір за циклом дня, розмиття 20%,
+    яскравість +200%, неонове сяйво). Малюється один раз у спрайт (запасне полотно) і далі лише копіюється;
+    перемальовується лише при зміні кольору (крок ~2% циклу дня) або масштабу екрана (DPR).
+    Хмари й дощ на аватарці лишились анімованими. Велике сонце у віджеті, як і раніше, живе.
+ 3. Меню з описом при наведенні на лого "Antirus-Control" спливає через 0,75 с (LOGO_POP_DELAY = 750) замість 1,5 с.
+ 4. Дебаг-принти: "flag", "sun" (спрайт аватарки перемальовано + лічильник), "logo".
+ 5. Назва файлу: index_v1.6.6_2026-10-10.html.
+
+Зміни 1.6.5 відносно 1.6.4 (сяйво навколо лого "Antirus-Control"):
+ 1. Сяйво при наведенні тепер ЧИСТО ЗЕЛЕНЕ (#00ff41, колір виміряно зі сторінки Antirus-Control)
+    замість салатового: два розмиті шари без чіткої лінії, розмиття +20% (LOGO_GLOW_BLUR = 1,2).
+ 2. Чорний кант прибрано: сяйво більше не окремий контур із проміжком, а починається прямо від краю
+    восьмикутника лого (шари малюються ПОЗАДУ лого, видно лише зовнішнє світіння).
+ 3. Кути сяйва скруглені (LOGO_GLOW_RADIUS = 4,2); форма береться з меж реального логотипа.
+ 4. Пульсація м'якша: змінюється прозорість (~20%, цикл 2,4 с), без різкого drop-shadow.
+ 5. Логотип перероблено без темної облямівки по краях (прозорі пікселі несуть червоний колір рамки).
+ 6. Параметри: LOGO_NEON, LOGO_GLOW_BLUR, LOGO_GLOW_ALPHA, LOGO_GLOW_RADIUS (пошук: "var LOGO_").
+ 7. Назва файлу: index_v1.6.5_2026-10-10.html.
+
+Зміни 1.6.4 відносно 1.6.3 (кнопка-лого "Antirus-Control" у вікні версії):
+ 1. Під блоком "Версія / Розробник / Kyiv Ukraine 2026" додано кнопку-лого (логотип "АНТІРУС" вбудовано у файл
+    як data-URI, білий фон прибрано). Кнопка без фону, рамки, тіні й квадратного контуру фокуса.
+ 2. При наведенні (і при фокусі з клавіатури) навколо лого загоряється ЗЕЛЕНИЙ неоновий восьмикутник (пульсує).
+ 3. Через 1,5 с після наведення (або одразу по кліку/дотику) відкривається вікно в нашому стилі: заголовок
+    "Antirus-Control", лаконічний опис розширення й кнопка "Перейти на сайт"
+    (https://antiruskontrol.github.io/antirus-control/, нова вкладка). Вікно лишається, поки курсор на лого чи на вікні.
+ 4. Вікно відкривається зліва від вікна версії, на вузьких екранах (< ~640 px зліва) - під ним.
+ 5. Параметри: LOGO_NEON, LOGO_RING_GAP, LOGO_URL (пошук: "var LOGO_"). Дебаг-принти з міткою "logo".
+ 6. Назва файлу: index_v1.6.4_2026-10-10.html (дата змінилася після півночі).
+
+Зміни 1.6.3 відносно 1.6.2 (вікно кнопки версії):
+ 1. Новий розділ "Фічі" перед "Налаштування": лаконічний опис логіки віджета (віджет і аватарка показують
+    погоду в місті користувача; при виборі іншого міста віджет показує його погоду й реальне положення
+    сонця/місяця, а аватарка біля курсора й далі показує місто користувача).
+ 2. Після рядка версії додано підпис: "Розробник: Афтіпа Марко Оцтович" та "Kyiv Ukraine 2026".
+ 3. Дебаг-принт при відкритті вікна версії: маркер, що розділ "Фічі" і підпис показано.
+ 4. Назва файлу: index_v1.6.3_2026-10-09.html.
+
 Зміни 1.6.2 відносно 1.6.1 (нове сонце у віджеті й в аватарці):
  1. Сонце перемальовано: 28 тонких загострених променів (в аватарці 12), чергуються довгі й короткі,
     УСІ вигнуті; довжина й вигин кожного повільно змінюються в своєму ритмі; повільне обертання вінця.
@@ -138,33 +192,19 @@
 ===================================================================
 -->
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
+ <link rel="icon" type="image/png" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Оптимізований заголовок для пошукових роботів -->
-    <title>WeatherInUkraine – Архів та порівняння погоди в Києві по днях</title>
-    
-    <!-- Метатег опису сайту для видачі Google (Snippet) -->
-    <meta name="description" content="WeatherInUkraine — сервіс для порівняння погоди в Україні та Києві по днях. Аналізуйте та порівнюйте архівні дані погоди за минулі роки.">
-    
-    <!-- Ключові слова (додатковий індикатор для деяких алгоритмів) -->
-    <meta name="keywords" content="WeatherInUkraine, погода в києві, порівняння погоди, архів погоди київ, історія погоди по днях, статистика погоди">
-    
-    <!-- Іконки сайту -->
+    <title>Порівняння погоди в Києві по днях</title>
     <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
     <link rel="apple-touch-icon" href="favicon.png">
-    
-    <!-- Бібліотеки та скрипти -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
-    
     <style>
-
         :root { --neon: #3b82f6; --neon-glow: 0 0 6px #3b82f6, 0 0 18px rgba(59,130,246,.65); }
         body { background:#111827; color:#f3f4f6; font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; margin:0; padding:24px; display:flex; justify-content:center; }
         .container { max-width:1100px; width:100%; background:#1f2937; border:1px solid #374151; border-radius:12px; padding:24px; box-shadow:0 10px 25px -5px rgba(0,0,0,.3); }
@@ -172,10 +212,7 @@
         .controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:24px; border-bottom:1px solid #374151; padding-bottom:24px; margin-bottom:24px; }
         label.control-title { display:block; font-size:14px; font-weight:500; margin-bottom:8px; color:#d1d5db; }
         .grid-years { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-        .year-item { display:flex; align-items:center; gap:8px; background:#1f2937; padding:8px 12px; <head>
-    <meta charset="UTF-8">
- <link rel="icon" type="image/png" href="favicon.png">
-  border-radius:6px; cursor:pointer; font-size:14px; user-select:none; border:1px solid #374151; transition:all .2s ease; }
+        .year-item { display:flex; align-items:center; gap:8px; background:#1f2937; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:14px; user-select:none; border:1px solid #374151; transition:all .2s ease; }
         .year-item:hover { background:#374151; border-color:var(--neon); box-shadow:var(--neon-glow); }
         .year-item.highlighted { background:#374151; border-color:var(--year-color,#3b82f6); box-shadow:0 0 10px var(--year-color,#3b82f6); transform:scale(1.03); }
         .year-item.dimmed { opacity:.35; }
@@ -276,6 +313,27 @@
         .leap-grid { display:grid; grid-template-columns:1fr auto; gap:6px 16px; padding:10px 12px; background:rgba(0,0,0,.25); border:1px solid rgba(249,115,22,.3); border-radius:8px; }
         .leap-grid span:nth-child(even) { text-align:right; color:#fde68a; font-variant-numeric:tabular-nums; }
         @media (prefers-reduced-motion:reduce) { .ww-body, .ww-body :is(h2,h3,p,li,.ww-sw) { animation:none !important; } .wave-win.show, #verWin.show { transition-duration:.2s; } }
+        /* ---------- v1.6.4: кнопка-лого Antirus-Control ---------- */
+        #verWin { display:flex; flex-direction:column; }
+        #verWin .ww-body { max-height:calc(var(--wwmax) - 96px); }
+        .ww-foot { position:relative; padding:0 28px 18px; }
+        .lg-btn { position:relative; display:block; width:64px; height:64px; margin:0; padding:0; border:0; border-radius:0; background:none; box-shadow:none; outline:none; cursor:pointer; -webkit-appearance:none; appearance:none; -webkit-tap-highlight-color:transparent; }
+        .lg-btn:hover, .lg-btn:focus, .lg-btn:active { background:none; box-shadow:none; outline:none; }
+        .lg-img { position:absolute; left:6px; top:6px; width:52px; height:52px; display:block; pointer-events:none; user-select:none; -webkit-user-drag:none; }
+        .lg-ring { position:absolute; left:0; top:0; width:64px; height:64px; opacity:0; transition:opacity .25s; pointer-events:none; overflow:visible; }
+        .lg-ring path { fill:none; stroke:var(--lg-neon, #00ff41); stroke-linejoin:round; }
+        .lg-ring g { animation:lgPulse 2.4s ease-in-out infinite; }
+        .lg-btn:hover .lg-ring, .lg-btn:focus-visible .lg-ring, .lg-btn.on .lg-ring { opacity:1; }
+        @keyframes lgPulse { 0%,100% { opacity:.8; } 50% { opacity:1; } }
+        #lgPop { position:fixed; z-index:140; width:min(300px, calc(100vw - 40px)); visibility:hidden; --wwmax:calc(100vh - 40px); transition:opacity .3s ease, visibility 0s .3s; }
+        #lgPop.show { visibility:visible; transition:opacity var(--lg-fade, 750ms) ease, visibility 0s; }
+        .ww-link { display:block; text-align:center; text-decoration:none; margin-top:12px; padding:9px 12px; border:1px solid rgba(249,115,22,.5); border-radius:6px; background:rgba(249,115,22,.08); color:rgba(251,191,36,.95); font-size:13px; text-shadow:inherit; transition:box-shadow .2s, border-color .2s, color .2s; }
+        .ww-link:hover, .ww-link:focus-visible { border-color:var(--orange); box-shadow:var(--orange-glow); color:#fff; outline:none; }
+        /* ---------- v1.6.6: прапор України біля міста ---------- */
+        #tbFlag { display:inline-block; vertical-align:-2px; margin:0 1px 0 0; filter:url(#flagWave) drop-shadow(0 0 3px rgba(255,214,10,.35)); }
+        #tbFlag.static { filter:drop-shadow(0 0 3px rgba(255,214,10,.35)); }
+        #siteFooter a { color:rgba(251,191,36,.85); text-decoration:none; text-shadow:0 0 6px rgba(249,115,22,.6); transition:color .2s, text-shadow .2s; }
+        #siteFooter a:hover, #siteFooter a:focus-visible { color:#fff; text-shadow:0 0 8px #f97316, 0 0 18px rgba(249,115,22,.7); outline:none; }
     </style>
 </head>
 <body>
@@ -284,6 +342,12 @@
             <filter id="waveBg" x="-8%" y="-8%" width="116%" height="116%">
                 <feTurbulence id="wtBg" type="fractalNoise" baseFrequency="0.008 0.02" numOctaves="2" seed="3" result="n"/>
                 <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+            <filter id="lgBlur1" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur id="lgStd1" stdDeviation="3.1"/></filter>
+            <filter id="lgBlur2" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur id="lgStd2" stdDeviation="1.6"/></filter>
+            <filter id="flagWave" x="-10%" y="-20%" width="120%" height="140%">
+                <feTurbulence id="ftFlag" type="fractalNoise" baseFrequency="0.02 0.06" numOctaves="1" seed="2" result="n"/>
+                <feDisplacementMap id="fdFlag" in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
             </filter>
             <filter id="waveTx" x="-4%" y="-4%" width="108%" height="108%">
                 <feTurbulence id="wtTx" type="fractalNoise" baseFrequency="0.011 0.028" numOctaves="2" seed="7" result="n"/>
@@ -294,7 +358,7 @@
     <canvas id="bgCanvas"></canvas>
     <div id="flash"></div>
     <div id="topbar">
-        <span id="tbInfo"></span>
+        <span id="tbInfo"><span id="tbDt"></span> <svg id="tbFlag" width="22" height="15" viewBox="0 0 22 15" aria-hidden="true"><defs><clipPath id="flagClip"><rect width="22" height="15" rx="2.2"/></clipPath></defs><g clip-path="url(#flagClip)"><rect width="22" height="7.5" fill="#0057b7"/><rect y="7.5" width="22" height="7.5" fill="#ffd700"/></g><rect width="22" height="15" rx="2.2" fill="none" stroke="rgba(255,255,255,.22)" stroke-width=".6"/></svg> <span id="tbCityN"></span></span>
         <div class="tb-center">
             <button type="button" id="atmoBtn">Атмосфера: вимк.</button>
             <select id="seasonSel" title="Сезон звуків (для тесту)"><option value="auto">Сезон: авто</option><option value="autumn">Осінь</option><option value="winter">Зима</option><option value="spring">Весна</option><option value="summer">Літо</option></select>
@@ -308,6 +372,12 @@
             <button type="button" class="ww-x" id="verClose" aria-label="Закрити">&times;</button>
             <h2 id="verTitle">WeatherInUkraine</h2>
             <p>Інтерактивний інструмент порівняльного кліматичного аналізу: показує історичні дані та поточний прогноз для міст України у вигляді графіків. Дані завантажуються в реальному часі з Open-Meteo.</p>
+            <h3>Фічі</h3>
+            <ul>
+                <li>При відкритті сайту віджет і аватарка біля курсора показують погоду у вашому місті.</li>
+                <li>Обрали інше місто: віджет перемикається на нього і показує його погоду та реальне положення сонця (вночі місяця) на небі.</li>
+                <li>Аватарка біля курсора й далі показує погоду у вашому місті.</li>
+            </ul>
             <h3>Налаштування</h3>
             <ul>
                 <li>Місто: будь-який населений пункт України (наприклад, Київ).</li>
@@ -320,7 +390,22 @@
                 <li>Масштаб - колесом миші; прокрутка - затисканням графіка або повзунком унизу.</li>
                 <li>Кнопка «Скинути масштаб» повертає початковий вигляд.</li>
             </ul>
-            <p class="ww-ver">Версія <span id="verWinVer"></span></p>
+            <p class="ww-ver">Версія <span id="verWinVer"></span><br>Розробник: Афтіпа Марко Оцтович<br>Kyiv Ukraine 2026</p>
+        </div>
+        <div class="ww-foot">
+            <button type="button" class="lg-btn" id="lgBtn" aria-label="Antirus-Control" aria-haspopup="dialog">
+                <svg class="lg-ring" viewBox="0 0 64 64" aria-hidden="true"><g><path id="lgGlow1" stroke-width="7" filter="url(#lgBlur1)"/><path id="lgGlow2" stroke-width="3.5" filter="url(#lgBlur2)"/></g></svg>
+                <img class="lg-img" id="lgImg" alt="" width="52" height="52" draggable="false">
+            </button>
+        </div>
+    </div>
+
+    <div class="wave-win" id="lgPop" role="dialog" aria-label="Antirus-Control">
+        <div class="ww-bg"></div>
+        <div class="ww-body">
+            <h2>Antirus-Control</h2>
+            <p>Розширення для браузера: розмиває російськомовний текст на сторінках і пропускає Shorts на YouTube.</p>
+            <a class="ww-link" id="lgLink" href="https://antiruskontrol.github.io/antirus-control/" target="_blank" rel="noopener">Перейти на сайт</a>
         </div>
     </div>
 
@@ -408,12 +493,12 @@
         </div>
     </div>
 
-    <footer id="siteFooter">Розробник: Афтіпа Марко Оцтович<br>Kyiv Ukraine 2026</footer>
+    <footer id="siteFooter">Розробник: Афтіпа Марко Оцтович<br>Kyiv Ukraine 2026<br><a id="footMail" href="mailto:antiruskontrol@ukr.net">antiruskontrol@ukr.net</a></footer>
     <div id="avatar"><canvas id="avCanvas"></canvas><span id="avLabel"></span></div>
 
     <script>
         var CITY = { name: 'Київ', lat: '50.4501', lon: '30.5234' };
-        var VERSION = '1.6.2'; // оновлювати разом із шапкою файлу
+        var VERSION = '1.6.7'; // оновлювати разом із шапкою файлу
         var DEBUG = true;
         function dbg(marker, info) { if (DEBUG) console.log('[WeatherScope][' + marker + ']', info === undefined ? '' : info); }
 
@@ -859,6 +944,7 @@
         var SUN_BLUR = 0.2;         // розмиття: частка радіуса диска (0,2 = 20%)
         var SUN_BRIGHT = 3;         // яскравість (3 = +200%)
         var SUN_ALPHA = 0.9;        // загальна непрозорість сонця (0,9 = на 10% прозоріше)
+        var AVATAR_SUN_FADE = 0.62; // де починається згасання прозорості до країв спрайта сонця аватарки (0-1 від радіуса)
         var SUN_PEAK_YELLOW = 0.3;  // наскільки жовтіший піковий колір (0,3 = на 30%)
         function sunHex(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
         function sunMix(a, b, t) { var p = typeof a === 'string' ? sunHex(a) : a, q = typeof b === 'string' ? sunHex(b) : b; return [Math.round(p[0] + (q[0] - p[0]) * t), Math.round(p[1] + (q[1] - p[1]) * t), Math.round(p[2] + (q[2] - p[2]) * t)]; }
@@ -880,7 +966,7 @@
         // p - цикл дня (0 схід ... 1 захід); перші й останні 5% - швидка зміна, решта 90% - лише 10% зміни
         function sunS(p) { var e = Math.min(p, 1 - p); if (e < .05) { var x = e / .05; return .9 * x * x * (3 - 2 * x); } return .9 + .1 * ((e - .05) / .45); }
         var sunDbgKeys = {};
-        function drawSunBody(c, t, x, y, u, prog) {
+        function paintSun(c, t, x, y, u, prog) {
             if (prog === undefined || prog === null || isNaN(prog)) prog = .5;
             prog = Math.max(0, Math.min(1, prog));
             var s = sunS(prog), p = sunPal(s), R = 13 * u * (1 + .14 * (1 - s)), big = u > .8, N = big ? 28 : 12, gs = big ? 1 : .4;
@@ -922,6 +1008,29 @@
             var now = new Date(), tm = SunCalc.getTimes(now, +USER.lat, +USER.lon), a = tm.sunrise.getTime(), b = tm.sunset.getTime(), n = now.getTime();
             if (!(b > a)) return .5;
             return Math.max(0, Math.min(1, (n - a) / (b - a)));
+        }
+
+        // аватарка біля курсора: сонце статичне - малюється один раз у спрайт і далі лише копіюється
+        var sunSpriteCache = null, sunSpriteCount = 0;
+        function drawSunBody(c, t, x, y, u, prog) {
+            if (u > .8) { paintSun(c, t, x, y, u, prog); return; }
+            var sc = (c.getTransform ? c.getTransform().a : 1) || 1;
+            if (prog === undefined || prog === null || isNaN(prog)) prog = .5;
+            prog = Math.max(0, Math.min(1, prog));
+            var s = sunS(prog), key = Math.round(s * 50) + ':' + sc.toFixed(2) + ':' + u.toFixed(2), half = 13 * u * 6.5, box = half * 2;
+            if (!sunSpriteCache || sunSpriteCache.key !== key) {
+                var cv = sunSpriteCache ? sunSpriteCache.cv : document.createElement('canvas');
+                cv.width = Math.ceil(box * sc); cv.height = Math.ceil(box * sc);
+                var g = cv.getContext('2d'); g.setTransform(sc, 0, 0, sc, cv.width / 2, cv.height / 2);
+                paintSun(g, 0, 0, 0, u, prog);
+                g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-in'; g.filter = 'none';
+                var mk = g.createRadialGradient(cv.width / 2, cv.height / 2, 0, cv.width / 2, cv.height / 2, cv.width / 2);
+                mk.addColorStop(0, 'rgba(0,0,0,1)'); mk.addColorStop(AVATAR_SUN_FADE, 'rgba(0,0,0,1)'); mk.addColorStop(1, 'rgba(0,0,0,0)');
+                g.fillStyle = mk; g.fillRect(0, 0, cv.width, cv.height); g.restore();
+                sunSpriteCache = { key: key, cv: cv, half: half, box: box }; sunSpriteCount++;
+                dbg('sun', 'маркер: статичний спрайт аватарки перемальовано (круглий край, згасання з ' + AVATAR_SUN_FADE + ') (причина: колір s=' + s.toFixed(2) + ', масштаб ' + sc.toFixed(2) + ', u=' + u.toFixed(2) + '), всього перемальовувань: ' + sunSpriteCount);
+            }
+            c.drawImage(sunSpriteCache.cv, x - sunSpriteCache.half, y - sunSpriteCache.half, sunSpriteCache.box, sunSpriteCache.box);
         }
 
         function drawBody(c, kind, t, x, y, u, prog) {
@@ -1164,7 +1273,8 @@
         // ---------- місто користувача ----------
         function tickClock() {
             var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
-            document.getElementById('tbInfo').textContent = p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear() + ', ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + ' · 📍 ' + USER.name;
+            document.getElementById('tbDt').textContent = p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear() + ', ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + ' · 📍';
+            document.getElementById('tbCityN').textContent = USER.name;
         }
         function nearestCity(lat, lon) {
             var best = null, bd = 1e9;
@@ -1388,17 +1498,65 @@
             win.classList.remove('show'); if (overlay) overlay.classList.remove('show');
             dbg('win', 'маркер: вікно "' + id + '" закрито - ' + reason);
         }
-        function verOpen(reason) { document.getElementById('verWinVer').textContent = VERSION; winShow('ver', verWin, null, reason); tbVerBtn.classList.add('on'); tbVerBtn.setAttribute('aria-expanded', 'true'); }
-        function verClose(reason) { winHide('ver', verWin, null, reason); tbVerBtn.classList.remove('on'); tbVerBtn.setAttribute('aria-expanded', 'false'); }
+        function verOpen(reason) { document.getElementById('verWinVer').textContent = VERSION; dbg('ver', 'маркер: вікно версії - розділ "Фічі" і підпис розробника показано (' + reason + ')'); winShow('ver', verWin, null, reason); tbVerBtn.classList.add('on'); tbVerBtn.setAttribute('aria-expanded', 'true'); }
+        function verClose(reason) { lgHide('вікно версії закрито: ' + reason); winHide('ver', verWin, null, reason); tbVerBtn.classList.remove('on'); tbVerBtn.setAttribute('aria-expanded', 'false'); }
         function hintOpen(reason) { verClose('відкрито вікно підказки'); document.getElementById('leapCity').textContent = CITY.name; winShow('hint', hintWin, hintModal, reason); }
         function hintClose(reason) { winHide('hint', hintWin, hintModal, reason); }
+
+        // ---------- v1.6.4: кнопка-лого Antirus-Control ----------
+        var LOGO_NEON = '#00ff41';      // колір зеленого сяйва навколо лого (виміряно зі сторінки Antirus-Control)
+        var LOGO_GLOW_BLUR = 1.2;       // сила розмиття сяйва (1 = базове, 1,2 = +20%)
+        var LOGO_GLOW_ALPHA = 1;        // яскравість сяйва (множник прозорості шарів)
+        var LOGO_POP_DELAY = 0;          // мс до появи меню з описом після наведення на лого (0 = одразу)
+        var LOGO_POP_FADE_MS = 750;     // тривалість проявлення меню (мс)
+        var LOGO_LINK = 'https://antiruskontrol.github.io/antirus-control/';   // куди веде клік по лого
+        var LOGO_GLOW_RADIUS = 4.2;     // скруглення кутів сяйва (px у шкалі кнопки 64x64)
+        var LOGO_OCT = { l: 8.44, t: 8.44, r: 55.56, b: 55.56, cut: 13.43 };   // межі восьмикутника логотипа в кнопці 64x64
+        var LOGO_URL = 'data:image/png;base64,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';
+        var lgBtn = document.getElementById('lgBtn'), lgPop = document.getElementById('lgPop'), lgSh = 0, lgHd = 0;
+        document.getElementById('lgImg').src = LOGO_URL;
+        lgPop.style.setProperty('--lg-fade', LOGO_POP_FADE_MS + 'ms'); document.getElementById('lgLink').href = LOGO_LINK;
+        document.documentElement.style.setProperty('--lg-neon', LOGO_NEON);
+        (function () {
+            var o = LOGO_OCT, V = [[o.l + o.cut, o.t], [o.r - o.cut, o.t], [o.r, o.t + o.cut], [o.r, o.b - o.cut], [o.r - o.cut, o.b], [o.l + o.cut, o.b], [o.l, o.b - o.cut], [o.l, o.t + o.cut]], n = V.length, d = '', i;
+            function toward(p, q) { var dx = p[0] - q[0], dy = p[1] - q[1], l = Math.sqrt(dx * dx + dy * dy); return [q[0] + dx / l * LOGO_GLOW_RADIUS, q[1] + dy / l * LOGO_GLOW_RADIUS]; }
+            for (i = 0; i < n; i++) {
+                var a = V[(i + n - 1) % n], b = V[i], c = V[(i + 1) % n], st = toward(a, b), en = toward(c, b);
+                d += (i ? 'L' : 'M') + st[0].toFixed(2) + ' ' + st[1].toFixed(2) + 'Q' + b[0] + ' ' + b[1] + ' ' + en[0].toFixed(2) + ' ' + en[1].toFixed(2);
+            }
+            d += 'Z';
+            document.getElementById('lgGlow1').setAttribute('d', d); document.getElementById('lgGlow2').setAttribute('d', d);
+            document.getElementById('lgGlow1').setAttribute('opacity', Math.min(1, .6 * LOGO_GLOW_ALPHA)); document.getElementById('lgGlow2').setAttribute('opacity', Math.min(1, .8 * LOGO_GLOW_ALPHA));
+            document.getElementById('lgStd1').setAttribute('stdDeviation', (2.6 * LOGO_GLOW_BLUR).toFixed(2)); document.getElementById('lgStd2').setAttribute('stdDeviation', (1.3 * LOGO_GLOW_BLUR).toFixed(2));
+        })();
+        dbg('logo', 'маркер: логотип вбудовано (' + LOGO_URL.length + ' символів), неон ' + LOGO_NEON + ', розмиття x' + LOGO_GLOW_BLUR + ', яскравість x' + LOGO_GLOW_ALPHA + ', скруглення ' + LOGO_GLOW_RADIUS + ' px, сяйво прилягає до краю лого (без проміжку)');
+        function lgPlace() {
+            var vr = verWin.getBoundingClientRect(), br = lgBtn.getBoundingClientRect(), pw = lgPop.offsetWidth || 300, narrow = vr.left < pw + 34;
+            if (narrow) { lgPop.style.top = (vr.bottom + 10) + 'px'; lgPop.style.bottom = 'auto'; lgPop.style.right = '20px'; lgPop.style.left = 'auto'; }
+            else { lgPop.style.left = 'auto'; lgPop.style.top = 'auto'; lgPop.style.right = (window.innerWidth - vr.left + 14) + 'px'; lgPop.style.bottom = Math.max(10, window.innerHeight - br.bottom) + 'px'; }
+            dbg('logo', 'маркер: вікно розміщено ' + (narrow ? 'під вікном версії (вузький екран)' : 'зліва від вікна версії'));
+        }
+        function lgShow(reason) { if (openWins.logo) return; lgPlace(); winShow('logo', lgPop, null, reason); lgBtn.classList.add('on'); }
+        function lgHide(reason) { if (!openWins.logo) return; winHide('logo', lgPop, null, reason); lgBtn.classList.remove('on'); }
+        lgBtn.addEventListener('mouseenter', function () { clearTimeout(lgHd); if (LOGO_POP_DELAY > 0) lgSh = setTimeout(function () { lgShow('наведення на лого ' + LOGO_POP_DELAY + ' мс'); }, LOGO_POP_DELAY); else lgShow('наведення на лого (миттєво)'); dbg('logo', 'маркер: наведення на лого - зелене сяйво ' + LOGO_NEON + ', таймер ' + LOGO_POP_DELAY + ' мс'); });
+        lgBtn.addEventListener('mouseleave', function () { clearTimeout(lgSh); lgHd = setTimeout(function () { lgHide('курсор залишив лого'); }, 450); });
+        lgBtn.addEventListener('click', function (e) {
+            e.stopPropagation(); clearTimeout(lgSh);
+            var touch = window.matchMedia && window.matchMedia('(hover: none)').matches;
+            if (touch && !openWins.logo) { lgShow('перший дотик (сенсорний екран, наведення немає)'); return; }
+            dbg('logo', 'маркер: клік по лого -> миттєвий перехід на сайт ' + LOGO_LINK);
+            window.open(LOGO_LINK, '_blank', 'noopener');
+        });
+        lgPop.addEventListener('mouseenter', function () { clearTimeout(lgHd); });
+        lgPop.addEventListener('mouseleave', function () { lgHd = setTimeout(function () { lgHide('курсор залишив вікно опису'); }, 450); });
+        document.getElementById('lgLink').addEventListener('click', function () { dbg('logo', 'маркер: клік по "Перейти на сайт" -> ' + this.href); });
 
         tbVerBtn.addEventListener('click', function (e) { e.stopPropagation(); if (openWins.ver) verClose('повторний клік по версії'); else verOpen('клік по версії v' + VERSION); });
         document.getElementById('verClose').addEventListener('click', function () { verClose('хрестик'); });
         document.getElementById('hintBtn').addEventListener('click', function () { hintOpen('клік по кнопці "Підказка по графіку"'); });
         document.getElementById('hintClose').addEventListener('click', function () { hintClose('хрестик'); });
         hintModal.addEventListener('click', function (e) { if (e.target === hintModal) hintClose('клік поза вікном'); });
-        document.addEventListener('click', function (e) { if (openWins.ver && !verWin.contains(e.target) && e.target !== tbVerBtn) verClose('клік поза вікном'); });
+        document.addEventListener('click', function (e) { if (openWins.ver && !verWin.contains(e.target) && e.target !== tbVerBtn && !lgPop.contains(e.target)) verClose('клік поза вікном'); });
         document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { hintClose('Esc'); verClose('Esc'); } });
 
         // ---------- верхня панель зникає при прокрутці; рядок над графіком "липкий" ----------
@@ -1470,6 +1628,22 @@
             }
         }
 
+        // ---------- v1.6.6: прапор України біля міста ----------
+        var FLAG_WAVE = 2.2;        // сила хвильового погойдування прапора (px); 0 = нерухомий
+        (function () {
+            var fl = document.getElementById('tbFlag'), ft = document.getElementById('ftFlag'), fd = document.getElementById('fdFlag');
+            if (!FLAG_WAVE || REDUCED) { fl.classList.add('static'); dbg('flag', 'маркер: прапор показано нерухомим (' + (REDUCED ? 'системне "зменшити рух"' : 'FLAG_WAVE = 0') + ')'); return; }
+            fd.setAttribute('scale', FLAG_WAVE);
+            setInterval(function () {
+                if (tbHidden) return;
+                var t = performance.now() / 1000;
+                ft.setAttribute('baseFrequency', (0.02 + 0.004 * Math.sin(t * .6)).toFixed(4) + ' ' + (0.06 + 0.012 * Math.cos(t * .45)).toFixed(4));
+            }, 60);
+            dbg('flag', 'маркер: прапор показано з хвильовим погойдуванням ' + FLAG_WAVE + ' px (між піном і назвою міста)');
+        })();
+
+        document.getElementById('footMail').addEventListener('click', function () { dbg('footer', 'маркер: клік по пошті ' + this.getAttribute('href')); });
+        dbg('footer', 'маркер: у підвалі показано рядок з поштою antiruskontrol@ukr.net (mailto)');
         document.getElementById('tbVer').textContent = 'v' + VERSION;
         dbg('version', 'маркер: версія сторінки ' + VERSION);
         initCities();
