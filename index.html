@@ -1,9 +1,27 @@
 <!--
 ===================================================================
-Версія:       1.6.8 (WeatherScope Pro)
-Дата, час:    2026-10-11 01:08
+Версія:       1.6.9 (WeatherScope Pro)
+Дата, час:    2026-10-11 02:38
 Розробник:    Афтіпа Марко Оцтович
 -------------------------------------------------------------------
+Зміни 1.6.9 відносно 1.6.8 (зорі на віджеті вночі):
+ 1. Віджет: уночі мерехтять зорі (STAR_COUNT_DESKTOP = 50 на комп'ютері, STAR_COUNT_MOBILE = 25 на вузьких екранах < 600 px).
+    Позиції випадкові, але фіксуються на сесію (не стрибають). Розмір 0,6-1,8 px; STAR_BIG = 6 найбільших мають м'яку
+    іскру-хрестик. Колір: переважно білий, подекуди блакитнуватий або блідо-жовтий.
+ 2. Мерехтіння: у кожної зірки свій період 2-6 с і зсув фази, яскравість коливається 25-100% (STAR_MIN_A = 0,25).
+    Раз на 5-10 с (STAR_FLASH_MIN / STAR_FLASH_MAX) 1-2 випадкові зірки коротко спалахують. При "зменшити рух"
+    зірки не мерехтять, а світяться рівно.
+ 3. Коли видно: лише вночі за реальним положенням сонця для обраного міста (SunCalc). Видимість залежить від хмарності:
+    ясно/переважно ясно - 100%, мінлива хмарність - 60%, хмарно - 20%, туман - 10%, дощ/сніг/гроза - немає.
+    Поява й зникнення плавні, STAR_FADE_S = 2,5 с.
+ 4. Фон віджета уночі при ясному небі плавно темнішає (STAR_DARK = 0,38 - чорний шар 38%); зі зростанням хмарності
+    затемнення зменшується разом із зорями. Зорі й затемнення лежать ПІД місяцем і хмарами.
+ 5. Продуктивність: окремого циклу немає - малюється в наявному циклі віджета; зорі - готові спрайти (drawImage),
+    без shadowBlur і filter. Поза екраном (IntersectionObserver) зорі не малюються.
+ 6. Дебаг-принти (мітка "stars"): STARS_ON / STARS_OFF / STARS_LEVEL (причина: ніч + хмарність X%, код погоди, день),
+    STARS_COUNT (кількість зірок і ширина віджета), STARS_PAUSE / STARS_RESUME (віджет поза екраном / знову на екрані).
+ 7. VERSION і шапку оновлено разом. Назва файлу: index_v1.6.9_2026-10-11.html.
+
 Зміни 1.6.8 відносно 1.6.7 (оптимізація: гальмування руху курсора з аватаркою):
  1. Фон сторінки (drawBg): малюється у зменшеному вигляді (BG_SCALE = 0,35, полотно розтягнуте на весь екран -
     м'які градієнти візуально не змінились) і оновлюється BG_FPS = 30 разів на секунду; швидкість руху фону
@@ -512,7 +530,7 @@
 
     <script>
         var CITY = { name: 'Київ', lat: '50.4501', lon: '30.5234' };
-        var VERSION = '1.6.8'; // оновлювати разом із шапкою файлу
+        var VERSION = '1.6.9'; // оновлювати разом із шапкою файлу
         var DEBUG = true;
         function dbg(marker, info) { if (DEBUG) console.log('[WeatherScope][' + marker + ']', info === undefined ? '' : info); }
 
@@ -1194,10 +1212,82 @@
             }
             c.restore();
         }
+        // ---------- v1.6.9: зорі вночі + затемнення фону віджета (параметри - змінюйте тут) ----------
+        var STAR_COUNT_DESKTOP = 50;   // зірок на широкому екрані
+        var STAR_COUNT_MOBILE = 25;    // зірок на вузькому екрані
+        var STAR_MOBILE_W = 600;       // ширина віджета (px), нижче якої вважаємо екран вузьким
+        var STAR_BIG = 6;              // скільки зірок з іскрою-хрестиком (5-8)
+        var STAR_FADE_S = 2.5;         // тривалість плавного появи/зникнення (с)
+        var STAR_DARK = 0.38;          // затемнення фону віджета при ясній ночі (0-1)
+        var STAR_MIN_A = 0.25;         // мінімальна яскравість у мерехтінні (макс = 1)
+        var STAR_FLASH_MIN = 5, STAR_FLASH_MAX = 10;   // інтервал між спалахами (с)
+        var STAR = { a: 0, lt: 0, list: null, spr: null, tgt: -1, cnt: 0, onScreen: true, nextFlash: 3, flash: [] };
+        function starSprite(rgb, cross) {
+            var N = cross ? 64 : 32, h = N / 2, cv = document.createElement('canvas'), c, g, lg;
+            cv.width = cv.height = N; c = cv.getContext('2d');
+            g = c.createRadialGradient(h, h, 0, h, h, h);
+            g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.16, 'rgba(' + rgb + ',.95)'); g.addColorStop(.34, 'rgba(' + rgb + ',.4)'); g.addColorStop(1, 'rgba(' + rgb + ',0)');
+            c.fillStyle = g; c.fillRect(0, 0, N, N);
+            if (cross) {
+                lg = c.createLinearGradient(0, 0, N, 0);
+                lg.addColorStop(0, 'rgba(' + rgb + ',0)'); lg.addColorStop(.5, 'rgba(255,255,255,.9)'); lg.addColorStop(1, 'rgba(' + rgb + ',0)');
+                c.fillStyle = lg; c.fillRect(0, h - .6, N, 1.2);
+                lg = c.createLinearGradient(0, 0, 0, N);
+                lg.addColorStop(0, 'rgba(' + rgb + ',0)'); lg.addColorStop(.5, 'rgba(255,255,255,.9)'); lg.addColorStop(1, 'rgba(' + rgb + ',0)');
+                c.fillStyle = lg; c.fillRect(h - .6, 0, 1.2, N);
+            }
+            return cv;
+        }
+        function initStars() {
+            var RGB = { w: '255,255,255', b: '170,205,255', y: '255,240,190' }, n = Math.max(STAR_COUNT_DESKTOP, STAR_COUNT_MOBILE), i, p, key, big;
+            STAR.spr = {};
+            Object.keys(RGB).forEach(function (k) { STAR.spr[k] = starSprite(RGB[k], false); STAR.spr[k + 'X'] = starSprite(RGB[k], true); });
+            STAR.list = [];
+            for (i = 0; i < n; i++) {
+                p = Math.random(); key = p < .7 ? 'w' : (p < .9 ? 'b' : 'y'); big = i < STAR_BIG;
+                STAR.list.push({ x: Math.random(), y: Math.random(), r: big ? 1.4 + Math.random() * .4 : .6 + Math.pow(Math.random(), 1.6) * 1.2, big: big, spr: STAR.spr[key + (big ? 'X' : '')], per: 2 + Math.random() * 4, ph: Math.random() * 6.2832 });
+            }
+            dbg('stars', 'маркер: зорі створено (позиції випадкові, фіксовані на сесію): ' + n + ' шт., з іскрою ' + Math.min(STAR_BIG, n));
+        }
+        function starVis(code) { return code <= 1 ? 1 : code === 2 ? .6 : code === 3 ? .2 : (code === 45 || code === 48) ? .1 : 0; }
+        if (window.IntersectionObserver) new IntersectionObserver(function (en) {
+            var v = en[0].isIntersecting;
+            if (v !== STAR.onScreen) { STAR.onScreen = v; dbg('stars', 'маркер: ' + (v ? 'STARS_RESUME -> віджет знову на екрані, зорі малюються' : 'STARS_PAUSE -> віджет поза екраном, зорі не малюються')); }
+        }).observe(wxBox);
+        function drawStars(c, t, w, h) {
+            if (!STAR.list) { initStars(); STAR.lt = t; }
+            var dt = Math.max(0, Math.min(1, t - STAR.lt)), night = CEL ? !CEL.day : WX.kind === 'moon', vis = starVis(WX.code), target = night ? vis : 0, step, why, n, i, s, a, sz, k, f;
+            STAR.lt = t;
+            if (target !== STAR.tgt) {
+                why = night ? 'ніч + хмарність ' + Math.round((1 - vis) * 100) + '% (код погоди ' + WX.code + ')' + (vis === 0 ? ', опади/гроза - зорі не видно' : '') : 'день';
+                dbg('stars', 'маркер: ' + (target > 0 && STAR.tgt <= 0 ? 'STARS_ON' : target === 0 ? 'STARS_OFF' : 'STARS_LEVEL') + ' -> ' + why + ', видимість ' + Math.round(target * 100) + '% (' + CITY.name + ')');
+                STAR.tgt = target;
+            }
+            step = dt / STAR_FADE_S; STAR.a += Math.max(-step, Math.min(step, target - STAR.a));
+            if (STAR.a < .004 || !STAR.onScreen) return;
+            n = w < STAR_MOBILE_W ? STAR_COUNT_MOBILE : STAR_COUNT_DESKTOP;
+            if (n !== STAR.cnt) { STAR.cnt = n; dbg('stars', 'маркер: STARS_COUNT -> ' + n + ' зірок (ширина віджета ' + w + ' px, поріг ' + STAR_MOBILE_W + ' px)'); }
+            c.fillStyle = 'rgba(0,0,0,' + (STAR_DARK * STAR.a).toFixed(3) + ')'; c.fillRect(0, 0, w, h);
+            if (!REDUCED && t >= STAR.nextFlash) {
+                for (i = 0, k = 1 + (Math.random() < .5 ? 1 : 0); i < k; i++) STAR.flash.push({ i: Math.floor(Math.random() * n), t0: t });
+                STAR.nextFlash = t + STAR_FLASH_MIN + Math.random() * (STAR_FLASH_MAX - STAR_FLASH_MIN);
+            }
+            for (i = STAR.flash.length - 1; i >= 0; i--) if (t - STAR.flash[i].t0 > .35) STAR.flash.splice(i, 1);
+            for (i = 0; i < n; i++) {
+                s = STAR.list[i];
+                a = REDUCED ? .75 : STAR_MIN_A + (1 - STAR_MIN_A) * (.5 + .5 * Math.sin(6.2832 * t / s.per + s.ph));
+                sz = s.r * (s.big ? 14 : 6);
+                for (k = 0; k < STAR.flash.length; k++) if (STAR.flash[k].i === i) { f = Math.sin(Math.PI * (t - STAR.flash[k].t0) / .35); a += (1 - a) * f; sz *= 1 + .8 * f; }
+                c.globalAlpha = a * STAR.a;
+                c.drawImage(s.spr, s.x * w - sz / 2, s.y * h - sz / 2, sz, sz);
+            }
+            c.globalAlpha = 1;
+        }
         function drawWide(t) {
             var w = wxW, h = wxH, S = WX.S, k = WX.kind, c = wxCtx, o = offCtx, i;
             if (!w || !h) return;
             c.clearRect(0, 0, w, h); o.clearRect(0, 0, w, h);
+            drawStars(c, t, w, h);   // v1.6.9: зорі й затемнення фону - під місяцем і хмарами
             var code = WX.code, cover = code <= 1 ? 0 : code === 2 ? 1 : 2, ck = cover === 0 ? null : cover === 1 ? 'partly' : k, geo = [];
             if (ck) {
                 if (!S.sp || S.spk !== ck) {
