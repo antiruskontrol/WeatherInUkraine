@@ -12,7 +12,7 @@
 
 **Weather In Ukraine** — це інтерактивний вебдодаток з відкритим вихідним кодом для моніторингу, порівняння та візуалізації кліматичних даних міст України. Проєкт створено для зручного аналізу температурних змін за різні роки.
 
-🔗 [((https://antiruskontrol.github.io/WeaherinUkraine/))](https://antiruskontrol.github.io/WeatherInUkraine/)
+🔗 [https://antiruskontrol.github.io/WeaherinUkraine/](https://antiruskontrol.github.io/WeatherInUkraine/)
 
 📧 **Зворотний зв'язок / Контакти:** [напишіть мені листа](mailto:antiruskontrol@ukr.net)
 
@@ -60,7 +60,7 @@
 ## 📄 License
 This project is open-source and available under the [MIT License](LICENSE).
 
-🔗 [((https://antiruskontrol.github.io/WeaherinUkraine/))](https://antiruskontrol.github.io/WeatherInUkraine/)
+🔗 [https://antiruskontrol.github.io/WeaherinUkraine/](https://antiruskontrol.github.io/WeatherInUkraine/)
 
 ## Our other projects
 **[UAFilter](https://antiruskontrol.github.io/antirus-control/)** A browser extension that blurs Russian text on all websites and skips Russian videos on YouTube Shorts.
