@@ -1,7 +1,7 @@
 # 🌤️ Weather In Ukraine (Порівняльний аналіз клімату України)
 
 ## Ще наші проєкти
-**[UAFilter](https://antiruskontrol.github.io/antirus-control/)**
+**[UAFilter](https://antiruskontrol.github.io/antirus-control/)** Розширення для броузеру яке блюрить руснячий текст на всіх сайтах, та скіпає русняче відео на YouTube Shorts
 
 
 [🇺🇦 Українська версія](#-українська-версія) | [🇬🇧 English Version](#-english-version)
