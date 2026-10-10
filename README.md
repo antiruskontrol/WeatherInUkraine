@@ -62,5 +62,8 @@ This project is open-source and available under the [MIT License](LICENSE).
 
 🔗 [((https://antiruskontrol.github.io/WeaherinUkraine/))](https://antiruskontrol.github.io/WeatherInUkraine/)
 
+## Our other projects
+**[UAFilter](https://antiruskontrol.github.io/antirus-control/)** A browser extension that blurs Russian text on all websites and skips Russian videos on YouTube Shorts.
+
 📧 **Contact Email:** [send an email to developer](mailto:antiruskontrol@ukr.net)
 
