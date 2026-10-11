@@ -26,7 +26,7 @@ jobs:
         with:
           files: WeatherInUkraine.zip
           name: WeatherInUkraine Latest Build
-          tag_name: latest
+          tag_name: stable
           make_latest: true
           prerelease: false
           body: |
