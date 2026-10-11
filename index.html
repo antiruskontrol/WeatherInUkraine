@@ -1,26 +1,30 @@
 <!--
 ===================================================================
-Версія:       1.6.9 (WeatherScope Pro)
-Дата, час:    2026-10-11 02:38
+Версія:       1.7.0 (WeatherScope Pro)
+Дата, час:    2026-10-11 16:24
 Розробник:    Афтіпа Марко Оцтович
 -------------------------------------------------------------------
-Зміни 1.6.9 відносно 1.6.8 (зорі на віджеті вночі):
- 1. Віджет: уночі мерехтять зорі (STAR_COUNT_DESKTOP = 50 на комп'ютері, STAR_COUNT_MOBILE = 25 на вузьких екранах < 600 px).
-    Позиції випадкові, але фіксуються на сесію (не стрибають). Розмір 0,6-1,8 px; STAR_BIG = 6 найбільших мають м'яку
-    іскру-хрестик. Колір: переважно білий, подекуди блакитнуватий або блідо-жовтий.
- 2. Мерехтіння: у кожної зірки свій період 2-6 с і зсув фази, яскравість коливається 25-100% (STAR_MIN_A = 0,25).
-    Раз на 5-10 с (STAR_FLASH_MIN / STAR_FLASH_MAX) 1-2 випадкові зірки коротко спалахують. При "зменшити рух"
-    зірки не мерехтять, а світяться рівно.
- 3. Коли видно: лише вночі за реальним положенням сонця для обраного міста (SunCalc). Видимість залежить від хмарності:
-    ясно/переважно ясно - 100%, мінлива хмарність - 60%, хмарно - 20%, туман - 10%, дощ/сніг/гроза - немає.
-    Поява й зникнення плавні, STAR_FADE_S = 2,5 с.
- 4. Фон віджета уночі при ясному небі плавно темнішає (STAR_DARK = 0,38 - чорний шар 38%); зі зростанням хмарності
-    затемнення зменшується разом із зорями. Зорі й затемнення лежать ПІД місяцем і хмарами.
- 5. Продуктивність: окремого циклу немає - малюється в наявному циклі віджета; зорі - готові спрайти (drawImage),
-    без shadowBlur і filter. Поза екраном (IntersectionObserver) зорі не малюються.
- 6. Дебаг-принти (мітка "stars"): STARS_ON / STARS_OFF / STARS_LEVEL (причина: ніч + хмарність X%, код погоди, день),
-    STARS_COUNT (кількість зірок і ширина віджета), STARS_PAUSE / STARS_RESUME (віджет поза екраном / знову на екрані).
- 7. VERSION і шапку оновлено разом. Назва файлу: index_v1.6.9_2026-10-11.html.
+Зміни 1.7.0 відносно 1.6.8:
+ УВАГА: збірка зроблена на v1.6.8. Зорі вночі й затемнення фону віджета (v1.6.9, збиралась в іншій розмові)
+ сюди НЕ входять - їх треба злити з файлом v1.6.9.
+ 1. ЗВУКИ за реальною погодою на локації користувача (місто користувача, як в аватарці, не вибране на графіку):
+    - дощ лише коли зараз дощ/злива/мряка (гучність за інтенсивністю); без опадів дощу немає;
+    - грім і спалахи лише при грозі (коди 95-99), приблизно кожні 12-60 с;
+    - сніг: без шуму дощу, приглушений м'який вітер; туман: приглушення;
+    - вітер: гучність і тембр за швидкістю вітру (м/с);
+    - птахи: ВДЕНЬ, коли СОНЯЧНО (код 0-2), без опадів і сильного вітру, у весну/літо/осінь, ВЗИМКУ - ніколи
+      (густота: весна 1, літо 0,8, осінь 0,5);
+    - цвіркуни: тепла (від 12 °C) безвітряна ніч без опадів, окрім зими;
+    - сезон (авто/вручну) впливає лише на густоту птахів і цвіркунів; зміни звуку плавні (~3 с).
+ 2. ЕФЕКТИ НА ЕКРАНІ за погодою користувача: дощ (косі смуги + краплі на склі, що стікають) з прозорістю 10%
+    (SCREEN_RAIN_OPACITY) і сніг (сніжинки, що хитаються) з прозорістю 20% (SCREEN_SNOW_OPACITY); прозорість
+    масштабується з інтенсивністю опадів (максимум = задане значення). Легке полотно (SCREEN_FX_SCALE = 0,5,
+    SCREEN_FX_FPS = 30), не перехоплює клацань, вимикається при "зменшити рух" й без опадів.
+ 3. У вікні версії поряд з номером версії - дата й час редакції (BUILD_STAMP), нижче розробник, Kyiv Ukraine 2026
+    і пошта antiruskontrol@ukr.net.
+ 4. Запит погоди доповнено параметром precipitation; діагностика perf показує й час ефектів екрана.
+ 5. Дебаг-принти: "env" (погода користувача), "audio" (рішення про кожен шар і причина), "fx", "perf".
+ 6. Назва файлу: index_v1.7.0_2026-10-11.html.
 
 Зміни 1.6.8 відносно 1.6.7 (оптимізація: гальмування руху курсора з аватаркою):
  1. Фон сторінки (drawBg): малюється у зменшеному вигляді (BG_SCALE = 0,35, полотно розтягнуте на весь екран -
@@ -227,11 +231,12 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
+ <link rel="icon" type="image/png" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Порівняльний аналіз клімату</title>
-    <link rel="icon" type="image/png" href="favicon.png?v=2">
-
- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Порівняння погоди в Києві по днях</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
@@ -365,6 +370,10 @@
         #tbFlag.static { filter:drop-shadow(0 0 3px rgba(255,214,10,.35)); }
         #siteFooter a { color:rgba(251,191,36,.85); text-decoration:none; text-shadow:0 0 6px rgba(249,115,22,.6); transition:color .2s, text-shadow .2s; }
         #siteFooter a:hover, #siteFooter a:focus-visible { color:#fff; text-shadow:0 0 8px #f97316, 0 0 18px rgba(249,115,22,.7); outline:none; }
+        /* ---------- v1.7.0: ефекти екрана (дощ / сніг) та дата в вікні версії ---------- */
+        #fxCanvas { position:fixed; inset:0; width:100%; height:100%; z-index:40; pointer-events:none; opacity:0; transition:opacity .8s ease; }
+        .ww-ver a { color:inherit; text-decoration:none; border-bottom:1px dotted rgba(251,191,36,.5); transition:text-shadow .2s, color .2s; }
+        .ww-ver a:hover, .ww-ver a:focus-visible { color:#fff; text-shadow:0 0 8px #f97316, 0 0 18px rgba(249,115,22,.7); outline:none; }
     </style>
 </head>
 <body>
@@ -387,6 +396,7 @@
         </defs>
     </svg>
     <canvas id="bgCanvas"></canvas>
+    <canvas id="fxCanvas"></canvas>
     <div id="flash"></div>
     <div id="topbar">
         <span id="tbInfo"><span id="tbDt"></span> <svg id="tbFlag" width="22" height="15" viewBox="0 0 22 15" aria-hidden="true"><defs><clipPath id="flagClip"><rect width="22" height="15" rx="2.2"/></clipPath></defs><g clip-path="url(#flagClip)"><rect width="22" height="7.5" fill="#0057b7"/><rect y="7.5" width="22" height="7.5" fill="#ffd700"/></g><rect width="22" height="15" rx="2.2" fill="none" stroke="rgba(255,255,255,.22)" stroke-width=".6"/></svg> <span id="tbCityN"></span></span>
@@ -421,7 +431,7 @@
                 <li>Масштаб - колесом миші; прокрутка - затисканням графіка або повзунком унизу.</li>
                 <li>Кнопка «Скинути масштаб» повертає початковий вигляд.</li>
             </ul>
-            <p class="ww-ver">Версія <span id="verWinVer"></span><br>Розробник: Афтіпа Марко Оцтович<br>Kyiv Ukraine 2026</p>
+            <p class="ww-ver">Версія <span id="verWinVer"></span><br>Розробник: Афтіпа Марко Оцтович<br>Kyiv Ukraine 2026<br><a id="verMail" href="mailto:antiruskontrol@ukr.net">antiruskontrol@ukr.net</a></p>
         </div>
         <div class="ww-foot">
             <button type="button" class="lg-btn" id="lgBtn" aria-label="Antirus-Control" aria-haspopup="dialog">
@@ -529,7 +539,7 @@
 
     <script>
         var CITY = { name: 'Київ', lat: '50.4501', lon: '30.5234' };
-        var VERSION = '1.6.9'; // оновлювати разом із шапкою файлу
+        var VERSION = '1.7.0'; var BUILD_STAMP = '11.10.2026, 16:24';   // дата й час редакції (оновлюється в кожній збірці) // оновлювати разом із шапкою файлу
         var DEBUG = true;
         function dbg(marker, info) { if (DEBUG) console.log('[WeatherScope][' + marker + ']', info === undefined ? '' : info); }
 
@@ -1211,82 +1221,10 @@
             }
             c.restore();
         }
-        // ---------- v1.6.9: зорі вночі + затемнення фону віджета (параметри - змінюйте тут) ----------
-        var STAR_COUNT_DESKTOP = 50;   // зірок на широкому екрані
-        var STAR_COUNT_MOBILE = 25;    // зірок на вузькому екрані
-        var STAR_MOBILE_W = 600;       // ширина віджета (px), нижче якої вважаємо екран вузьким
-        var STAR_BIG = 6;              // скільки зірок з іскрою-хрестиком (5-8)
-        var STAR_FADE_S = 2.5;         // тривалість плавного появи/зникнення (с)
-        var STAR_DARK = 0.38;          // затемнення фону віджета при ясній ночі (0-1)
-        var STAR_MIN_A = 0.25;         // мінімальна яскравість у мерехтінні (макс = 1)
-        var STAR_FLASH_MIN = 5, STAR_FLASH_MAX = 10;   // інтервал між спалахами (с)
-        var STAR = { a: 0, lt: 0, list: null, spr: null, tgt: -1, cnt: 0, onScreen: true, nextFlash: 3, flash: [] };
-        function starSprite(rgb, cross) {
-            var N = cross ? 64 : 32, h = N / 2, cv = document.createElement('canvas'), c, g, lg;
-            cv.width = cv.height = N; c = cv.getContext('2d');
-            g = c.createRadialGradient(h, h, 0, h, h, h);
-            g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.16, 'rgba(' + rgb + ',.95)'); g.addColorStop(.34, 'rgba(' + rgb + ',.4)'); g.addColorStop(1, 'rgba(' + rgb + ',0)');
-            c.fillStyle = g; c.fillRect(0, 0, N, N);
-            if (cross) {
-                lg = c.createLinearGradient(0, 0, N, 0);
-                lg.addColorStop(0, 'rgba(' + rgb + ',0)'); lg.addColorStop(.5, 'rgba(255,255,255,.9)'); lg.addColorStop(1, 'rgba(' + rgb + ',0)');
-                c.fillStyle = lg; c.fillRect(0, h - .6, N, 1.2);
-                lg = c.createLinearGradient(0, 0, 0, N);
-                lg.addColorStop(0, 'rgba(' + rgb + ',0)'); lg.addColorStop(.5, 'rgba(255,255,255,.9)'); lg.addColorStop(1, 'rgba(' + rgb + ',0)');
-                c.fillStyle = lg; c.fillRect(h - .6, 0, 1.2, N);
-            }
-            return cv;
-        }
-        function initStars() {
-            var RGB = { w: '255,255,255', b: '170,205,255', y: '255,240,190' }, n = Math.max(STAR_COUNT_DESKTOP, STAR_COUNT_MOBILE), i, p, key, big;
-            STAR.spr = {};
-            Object.keys(RGB).forEach(function (k) { STAR.spr[k] = starSprite(RGB[k], false); STAR.spr[k + 'X'] = starSprite(RGB[k], true); });
-            STAR.list = [];
-            for (i = 0; i < n; i++) {
-                p = Math.random(); key = p < .7 ? 'w' : (p < .9 ? 'b' : 'y'); big = i < STAR_BIG;
-                STAR.list.push({ x: Math.random(), y: Math.random(), r: big ? 1.4 + Math.random() * .4 : .6 + Math.pow(Math.random(), 1.6) * 1.2, big: big, spr: STAR.spr[key + (big ? 'X' : '')], per: 2 + Math.random() * 4, ph: Math.random() * 6.2832 });
-            }
-            dbg('stars', 'маркер: зорі створено (позиції випадкові, фіксовані на сесію): ' + n + ' шт., з іскрою ' + Math.min(STAR_BIG, n));
-        }
-        function starVis(code) { return code <= 1 ? 1 : code === 2 ? .6 : code === 3 ? .2 : (code === 45 || code === 48) ? .1 : 0; }
-        if (window.IntersectionObserver) new IntersectionObserver(function (en) {
-            var v = en[0].isIntersecting;
-            if (v !== STAR.onScreen) { STAR.onScreen = v; dbg('stars', 'маркер: ' + (v ? 'STARS_RESUME -> віджет знову на екрані, зорі малюються' : 'STARS_PAUSE -> віджет поза екраном, зорі не малюються')); }
-        }).observe(wxBox);
-        function drawStars(c, t, w, h) {
-            if (!STAR.list) { initStars(); STAR.lt = t; }
-            var dt = Math.max(0, Math.min(1, t - STAR.lt)), night = CEL ? !CEL.day : WX.kind === 'moon', vis = starVis(WX.code), target = night ? vis : 0, step, why, n, i, s, a, sz, k, f;
-            STAR.lt = t;
-            if (target !== STAR.tgt) {
-                why = night ? 'ніч + хмарність ' + Math.round((1 - vis) * 100) + '% (код погоди ' + WX.code + ')' + (vis === 0 ? ', опади/гроза - зорі не видно' : '') : 'день';
-                dbg('stars', 'маркер: ' + (target > 0 && STAR.tgt <= 0 ? 'STARS_ON' : target === 0 ? 'STARS_OFF' : 'STARS_LEVEL') + ' -> ' + why + ', видимість ' + Math.round(target * 100) + '% (' + CITY.name + ')');
-                STAR.tgt = target;
-            }
-            step = dt / STAR_FADE_S; STAR.a += Math.max(-step, Math.min(step, target - STAR.a));
-            if (STAR.a < .004 || !STAR.onScreen) return;
-            n = w < STAR_MOBILE_W ? STAR_COUNT_MOBILE : STAR_COUNT_DESKTOP;
-            if (n !== STAR.cnt) { STAR.cnt = n; dbg('stars', 'маркер: STARS_COUNT -> ' + n + ' зірок (ширина віджета ' + w + ' px, поріг ' + STAR_MOBILE_W + ' px)'); }
-            c.fillStyle = 'rgba(0,0,0,' + (STAR_DARK * STAR.a).toFixed(3) + ')'; c.fillRect(0, 0, w, h);
-            if (!REDUCED && t >= STAR.nextFlash) {
-                for (i = 0, k = 1 + (Math.random() < .5 ? 1 : 0); i < k; i++) STAR.flash.push({ i: Math.floor(Math.random() * n), t0: t });
-                STAR.nextFlash = t + STAR_FLASH_MIN + Math.random() * (STAR_FLASH_MAX - STAR_FLASH_MIN);
-            }
-            for (i = STAR.flash.length - 1; i >= 0; i--) if (t - STAR.flash[i].t0 > .35) STAR.flash.splice(i, 1);
-            for (i = 0; i < n; i++) {
-                s = STAR.list[i];
-                a = REDUCED ? .75 : STAR_MIN_A + (1 - STAR_MIN_A) * (.5 + .5 * Math.sin(6.2832 * t / s.per + s.ph));
-                sz = s.r * (s.big ? 14 : 6);
-                for (k = 0; k < STAR.flash.length; k++) if (STAR.flash[k].i === i) { f = Math.sin(Math.PI * (t - STAR.flash[k].t0) / .35); a += (1 - a) * f; sz *= 1 + .8 * f; }
-                c.globalAlpha = a * STAR.a;
-                c.drawImage(s.spr, s.x * w - sz / 2, s.y * h - sz / 2, sz, sz);
-            }
-            c.globalAlpha = 1;
-        }
         function drawWide(t) {
             var w = wxW, h = wxH, S = WX.S, k = WX.kind, c = wxCtx, o = offCtx, i;
             if (!w || !h) return;
             c.clearRect(0, 0, w, h); o.clearRect(0, 0, w, h);
-            drawStars(c, t, w, h);   // v1.6.9: зорі й затемнення фону - під місяцем і хмарами
             var code = WX.code, cover = code <= 1 ? 0 : code === 2 ? 1 : 2, ck = cover === 0 ? null : cover === 1 ? 'partly' : k, geo = [];
             if (ck) {
                 if (!S.sp || S.spk !== ck) {
@@ -1351,7 +1289,7 @@
 
         // ---------- погода ----------
         async function getWx(lat, lon) {
-            var u = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=5&timezone=auto&wind_speed_unit=ms';
+            var u = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=5&timezone=auto&wind_speed_unit=ms';
             dbg('weather', 'запит: ' + u);
             var r = await fetch(u);
             if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -1388,6 +1326,7 @@
             try {
                 var d = await getWx(USER.lat, USER.lon), cu = d.current;
                 AV.kind = wxKind(cu.weather_code, cu.is_day); AV.S = AV.S || mkState(); AV.p = userDayProgress();
+                ENV = envFromWx(cu); onEnvChanged(reason);
                 avLabel.textContent = USER.name + ' · ' + Math.round(cu.temperature_2m) + '°';
                 dbg('avatar', 'маркер: ' + reason + ' -> ' + AV.kind + ', місто користувача: ' + USER.name);
             } catch (e) { console.error('[WeatherScope][error]', e); }
@@ -1428,12 +1367,39 @@
 
         // ---------- звуки (Web Audio) ----------
         var AC = null, A = { on: false, N: [] };
-        var PROF = {
-            autumn: { rain: .55, wind: .6, thunder: [30, 75], birds: 0, crickets: 0 },
-            winter: { rain: 0, wind: .8, thunder: null, birds: 0, crickets: 0 },
-            spring: { rain: .3, wind: .35, thunder: [70, 150], birds: 1, crickets: 0 },
-            summer: { rain: .12, wind: .2, thunder: [60, 140], birds: .6, crickets: 1 }
-        };
+        // ---------- v1.7.0: погода на локації користувача (джерело для звуків і ефектів екрана) ----------
+        var BIRD_DENS = { spring: 1, summer: .8, autumn: .5, winter: 0 };   // густота птахів за сезоном (взимку птахів немає)
+        var RAIN_LEVEL = { 51: .25, 53: .35, 55: .45, 56: .35, 57: .5, 61: .4, 63: .65, 65: 1, 66: .6, 67: .9, 80: .55, 81: .8, 82: 1 };
+        var SNOW_LEVEL = { 71: .3, 73: .55, 75: .9, 77: .3, 85: .5, 86: .85 };
+        var STORM_LEVEL = { 95: .8, 96: .95, 99: 1 };
+        var ENV = { ready: false, code: 3, kind: 'cloud', wind: 0, temp: 10, isDay: true, precip: 0, rain: false, snow: false, storm: false, level: 0, sunny: false };
+        function envFromWx(cu) {
+            var c = cu.weather_code, e = { ready: true, code: c, wind: +cu.wind_speed_10m || 0, temp: +cu.temperature_2m, isDay: cu.is_day === 1, precip: +cu.precipitation || 0, rain: false, snow: false, storm: false, level: 0 };
+            e.kind = wxKind(c, cu.is_day);
+            if (STORM_LEVEL[c] !== undefined) { e.storm = true; e.rain = true; e.level = STORM_LEVEL[c]; }
+            else if (RAIN_LEVEL[c] !== undefined) { e.rain = true; e.level = RAIN_LEVEL[c]; }
+            else if (SNOW_LEVEL[c] !== undefined) { e.snow = true; e.level = SNOW_LEVEL[c]; }
+            if ((e.rain || e.snow) && e.precip > 0) e.level = Math.max(e.level, Math.min(1, e.precip / 2.5));
+            e.sunny = e.isDay && c <= 2;
+            return e;
+        }
+        function onEnvChanged(reason) {
+            dbg('env', 'маркер: ' + reason + ' -> погода користувача (' + USER.name + '): код ' + ENV.code + ' (' + ENV.kind + '), вітер ' + ENV.wind + ' м/с, ' + ENV.temp + ' °C, ' + (ENV.isDay ? 'день' : 'ніч') + ', опади ' + ENV.precip + ' мм, інтенсивність ' + ENV.level + ', сонячно: ' + (ENV.sunny ? 'так' : 'ні'));
+            applyAudioEnv(reason);
+            fxUpdate(reason);
+        }
+        // план шарів звуку за погодою (чиста функція: легко перевірити)
+        function audioPlan(sn) {
+            var bd = BIRD_DENS[sn] || 0, pl = { rain: ENV.rain ? ENV.level : 0, wind: Math.min(1, ENV.wind / 12) * (ENV.snow ? .8 : 1), muffle: ENV.snow || ENV.code === 45 || ENV.code === 48, thunder: ENV.storm, bird: 0, crick: false, why: {} };
+            if (!ENV.sunny) pl.why.bird = 'не сонячно (' + (ENV.isDay ? 'код ' + ENV.code : 'ніч') + ')';
+            else if (ENV.rain || ENV.snow) pl.why.bird = 'опади';
+            else if (ENV.wind >= 8) pl.why.bird = 'сильний вітер ' + ENV.wind + ' м/с';
+            else if (bd <= 0) pl.why.bird = 'сезон "' + sn + '" без птахів';
+            else pl.bird = bd;
+            pl.crick = !ENV.isDay && ENV.temp >= 12 && ENV.wind < 6 && !ENV.rain && !ENV.snow && sn !== 'winter';
+            if (!pl.crick) pl.why.crick = ENV.isDay ? 'день' : (ENV.rain || ENV.snow) ? 'опади' : ENV.temp < 12 ? 'холодно (' + ENV.temp + ' °C)' : ENV.wind >= 6 ? 'вітер' : 'зима';
+            return pl;
+        }
         function season() {
             var v = seasonSel.value; if (v !== 'auto') return v;
             var m = new Date().getMonth() + 1;
@@ -1450,33 +1416,51 @@
         function startAtmo() {
             if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
             AC.resume();
-            A.on = true; A.season = season(); var p = PROF[A.season];
+            A.on = true; A.season = season();
             A.white = A.white || noiseBuf(false); A.brown = A.brown || noiseBuf(true);
-            A.master = AC.createGain(); A.master.gain.value = 0; A.master.connect(AC.destination);
+            A.master = AC.createGain(); A.master.gain.value = 0;
+            A.lp = AC.createBiquadFilter(); A.lp.type = 'lowpass'; A.lp.frequency.value = 20000;
+            A.master.connect(A.lp); A.lp.connect(AC.destination);
             A.master.gain.setTargetAtTime(.8, AC.currentTime, .5);
             var rs = loopSrc(A.white), hp = AC.createBiquadFilter(), lp = AC.createBiquadFilter();
             hp.type = 'highpass'; hp.frequency.value = 900; lp.type = 'lowpass'; lp.frequency.value = 7000;
             A.rainG = AC.createGain(); A.rainG.gain.value = 0; rs.connect(hp); hp.connect(lp); lp.connect(A.rainG); A.rainG.connect(A.master);
             var ws = loopSrc(A.brown); A.windF = AC.createBiquadFilter(); A.windF.type = 'bandpass'; A.windF.Q.value = .9;
             A.windG = AC.createGain(); A.windG.gain.value = 0; ws.connect(A.windF); A.windF.connect(A.windG); A.windG.connect(A.master);
-            if (p.crickets) cricketsOn();
-            wander(); chirp(); nextThunder();
-            dbg('audio', 'маркер: старт, сезон ' + A.season + ', профіль ' + JSON.stringify(p));
+            var co = AC.createOscillator(), cl = AC.createOscillator(), clg = AC.createGain(), cg = AC.createGain();
+            co.frequency.value = 4300; cl.frequency.value = 16; clg.gain.value = .5; cg.gain.value = .5;
+            A.crickG = AC.createGain(); A.crickG.gain.value = 0;
+            cl.connect(clg); clg.connect(cg.gain); co.connect(cg); cg.connect(A.crickG); A.crickG.connect(A.master); co.start(); cl.start(); A.N.push(co, cl);
+            A.tRain = 0; A.tWind = 0; A.bird = 0; A.birdsOn = false;
+            wander(); chirp(); applyAudioEnv('старт "Атмосфери"');
+            dbg('audio', 'маркер: старт, сезон ' + A.season + ' (звуки за реальною погодою користувача, сезон - лише густота птахів і цвіркунів)');
         }
         function stopAtmo() {
             A.on = false; clearTimeout(A.wT); clearTimeout(A.tT); clearTimeout(A.bT);
-            var m = A.master, ns = A.N; A.N = [];
+            var m = A.master, ns = A.N, lpf = A.lp; A.N = [];
             m.gain.setTargetAtTime(0, AC.currentTime, .25);
-            setTimeout(function () { ns.forEach(function (s) { try { s.stop(); } catch (e) { } }); m.disconnect(); }, 1200);
+            setTimeout(function () { ns.forEach(function (s) { try { s.stop(); } catch (e) { } }); m.disconnect(); if (lpf) lpf.disconnect(); }, 1200);
             dbg('audio', 'маркер: зупинено');
         }
         function wander() {
             if (!A.on) return;
-            var p = PROF[A.season], t = AC.currentTime;
-            var rl = p.rain ? (Math.random() < .2 ? .02 : p.rain * (.4 + Math.random() * .9)) : 0, wl = p.wind * (.15 + Math.random());
+            clearTimeout(A.wT);
+            var t = AC.currentTime;
+            var rl = A.tRain ? (Math.random() < .15 ? A.tRain * .3 : A.tRain * (.75 + Math.random() * .5)) : 0, wl = A.tWind ? A.tWind * (.6 + Math.random() * .8) : 0;
+            rl = Math.min(1, rl); wl = Math.min(1, wl);
             A.rainG.gain.setTargetAtTime(rl * .25, t, 2.5); A.windG.gain.setTargetAtTime(wl * .6, t, 1.8); A.windF.frequency.setTargetAtTime(220 + wl * 700, t, 1.5);
             dbg('audio', 'маркер: хвиля змін, дощ=' + rl.toFixed(2) + ', вітер=' + wl.toFixed(2));
             A.wT = setTimeout(wander, 3500 + Math.random() * 6000);
+        }
+        function applyAudioEnv(reason) {
+            if (!A.on || !AC) return;
+            var t = AC.currentTime, sn = A.season = season(), pl = audioPlan(sn);
+            A.tRain = pl.rain; A.tWind = pl.wind; A.bird = pl.bird; A.birdsOn = pl.bird > 0;
+            A.lp.frequency.setTargetAtTime(pl.muffle ? 2600 : 20000, t, 2);
+            A.crickG.gain.setTargetAtTime(pl.crick ? .012 : 0, t, 3);
+            if (pl.thunder) { if (!A.tT) nextThunder(); } else { clearTimeout(A.tT); A.tT = 0; }
+            wander();
+            dbg('audio', 'маркер: ' + reason + ' -> дощ=' + pl.rain.toFixed(2) + (pl.rain ? '' : ' (немає дощу в місті користувача)') + ', вітер=' + pl.wind.toFixed(2) + ' (' + ENV.wind + ' м/с), приглушення=' + (pl.muffle ? 'так (сніг/туман)' : 'ні') + ', гроза/грім=' + (pl.thunder ? 'так (код ' + ENV.code + ')' : 'ні (немає грози)') + ', птахи=' + (pl.bird ? pl.bird + ' (сонячно, сезон ' + sn + ')' : 'ні - ' + pl.why.bird) + ', цвіркуни=' + (pl.crick ? 'так (тепла безвітряна ніч)' : 'ні - ' + pl.why.crick));
         }
         function crack(t) {
             var s = AC.createBufferSource(), hp = AC.createBiquadFilter(), g = AC.createGain();
@@ -1499,37 +1483,105 @@
             dbg('thunder', 'маркер: ' + reason + '; віддаленість=' + dist.toFixed(2) + ', стерео ' + (dir > 0 ? 'правий -> лівий' : 'лівий -> правий') + ', тривалість ' + dur.toFixed(1) + ' с');
         }
         function nextThunder() {
-            var p = PROF[A.season]; if (!A.on || !p.thunder) return;
-            A.tT = setTimeout(function () { thunder(false, 'за розкладом сезону'); nextThunder(); }, (p.thunder[0] + Math.random() * (p.thunder[1] - p.thunder[0])) * 1000);
+            clearTimeout(A.tT);
+            if (!A.on || !ENV.storm) { A.tT = 0; return; }
+            var rng = ENV.code === 95 ? [25, 60] : [12, 35];
+            A.tT = setTimeout(function () { if (!A.on || !ENV.storm) { A.tT = 0; return; } thunder(false, 'гроза в місті користувача (код ' + ENV.code + ')'); nextThunder(); }, (rng[0] + Math.random() * (rng[1] - rng[0])) * 1000);
         }
         function chirp() {
-            var p = PROF[A.season]; if (!A.on || !p.birds) return;
-            var h = new Date().getHours();
-            if (h >= 5 && h <= 20) {
+            clearTimeout(A.bT);
+            if (!A.on) return;
+            if (A.birdsOn && A.bird > 0) {
                 var n = 2 + Math.floor(Math.random() * 3), f0 = 2200 + Math.random() * 2000, pn = Math.random() * 1.6 - .8, t = AC.currentTime;
                 for (var i = 0; i < n; i++) {
                     var o = AC.createOscillator(), g = AC.createGain(), pa = AC.createStereoPanner(), t0 = t + i * .13;
                     o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f0 * (1.3 + Math.random() * .5), t0 + .09);
-                    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.05 * p.birds, t0 + .02); g.gain.linearRampToValueAtTime(0, t0 + .1);
+                    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.05 * A.bird, t0 + .02); g.gain.linearRampToValueAtTime(0, t0 + .1);
                     pa.pan.value = pn; o.connect(g); g.connect(pa); pa.connect(A.master); o.start(t0); o.stop(t0 + .12);
                 }
-                dbg('audio', 'маркер: пташиний щебет, нот ' + n);
+                dbg('audio', 'маркер: пташиний щебет, нот ' + n + ' (сонячно, густота ' + A.bird + ')');
             }
-            A.bT = setTimeout(chirp, 2500 + Math.random() * 9000);
-        }
-        function cricketsOn() {
-            var h = new Date().getHours();
-            if (h < 18 && h > 5) { dbg('audio', 'маркер: цвіркуни пропущено (зараз не вечір/ніч)'); return; }
-            var o = AC.createOscillator(), l = AC.createOscillator(), lg = AC.createGain(), g = AC.createGain(), out = AC.createGain();
-            o.frequency.value = 4300; l.frequency.value = 16; lg.gain.value = .5; g.gain.value = .5; out.gain.value = .012;
-            l.connect(lg); lg.connect(g.gain); o.connect(g); g.connect(out); out.connect(A.master); o.start(); l.start(); A.N.push(o, l);
-            dbg('audio', 'маркер: цвіркуни увімкнено');
+            A.bT = setTimeout(chirp, (2500 + Math.random() * 9000) / Math.max(.3, A.bird || 1));
         }
         function toggleAtmo(reason) {
             if (A.on) stopAtmo(); else startAtmo();
             atmoBtn.classList.toggle('on', A.on); atmoBtn.textContent = 'Атмосфера: ' + (A.on ? 'увімк.' : 'вимк.');
             dbg('atmo', 'маркер: ' + reason + ' -> ' + (A.on ? 'увімкнено' : 'вимкнено'));
         }
+
+        // ---------- v1.7.0: ефекти на екрані (дощ / сніг) за погодою користувача ----------
+        var SCREEN_FX_ON = true;            // false = ефекти екрана вимкнено
+        var SCREEN_RAIN_OPACITY = 0.10;     // максимальна прозорість шару дощу (смуги + краплі)
+        var SCREEN_SNOW_OPACITY = 0.20;     // максимальна прозорість шару снігу
+        var SCREEN_FX_SCALE = 0.5;          // роздільність полотна ефектів відносно екрана
+        var SCREEN_FX_FPS = 30;             // частота оновлення ефектів
+        var FX = { mode: null, level: 0, on: false, last: 0, rain: [], drops: [], snow: [], hideT: 0 };
+        var fxCanvas = document.getElementById('fxCanvas'), fxCtx = fxCanvas.getContext('2d');
+        function fxSize() {
+            fxCanvas.width = Math.max(2, Math.round(window.innerWidth * SCREEN_FX_SCALE)); fxCanvas.height = Math.max(2, Math.round(window.innerHeight * SCREEN_FX_SCALE));
+            fxCtx.setTransform(SCREEN_FX_SCALE, 0, 0, SCREEN_FX_SCALE, 0, 0);
+        }
+        function fxInit(mode, lvl) {
+            var w = window.innerWidth, h = window.innerHeight, i, n;
+            fxSize(); FX.rain = []; FX.drops = []; FX.snow = [];
+            if (mode === 'rain') {
+                n = Math.round(30 + 90 * lvl);
+                for (i = 0; i < n; i++) FX.rain.push({ x: Math.random() * (w + 80), y: Math.random() * h, l: 14 + Math.random() * 16, v: 650 + Math.random() * 420 });
+                n = Math.round(4 + 10 * lvl);
+                for (i = 0; i < n; i++) FX.drops.push({ x: Math.random() * w, y: Math.random() * h, r: 1.8 + Math.random() * 3, v: 4 + Math.random() * 10 });
+            } else {
+                n = Math.round(35 + 85 * lvl);
+                for (i = 0; i < n; i++) FX.snow.push({ x: Math.random() * w, y: Math.random() * h, r: .8 + Math.random() * 2.6, v: 22 + Math.random() * 40, s: Math.random() * 6.28 });
+            }
+            dbg('fx', 'маркер: частинки створено (' + mode + '): смуг ' + FX.rain.length + ', крапель ' + FX.drops.length + ', сніжинок ' + FX.snow.length);
+        }
+        function fxUpdate(reason) {
+            var mode = (SCREEN_FX_ON && !REDUCED) ? (ENV.rain ? 'rain' : ENV.snow ? 'snow' : null) : null, lvl = ENV.level;
+            clearTimeout(FX.hideT);
+            if (!mode) {
+                if (FX.on) { fxCanvas.style.opacity = 0; FX.hideT = setTimeout(function () { FX.on = false; FX.mode = null; fxCtx.clearRect(0, 0, window.innerWidth, window.innerHeight); }, 1000); }
+                dbg('fx', 'маркер: ' + reason + ' -> ефект на екрані вимкнено (' + (!SCREEN_FX_ON ? 'SCREEN_FX_ON = false' : REDUCED ? 'системне "зменшити рух"' : 'немає опадів у місті користувача') + ')');
+                return;
+            }
+            if (FX.mode !== mode || !FX.on || Math.abs(FX.level - lvl) > .15) fxInit(mode, lvl);
+            FX.mode = mode; FX.level = lvl; FX.on = true;
+            var base = mode === 'rain' ? SCREEN_RAIN_OPACITY : SCREEN_SNOW_OPACITY, op = base * (.4 + .6 * lvl);
+            fxCanvas.style.opacity = op.toFixed(3);
+            dbg('fx', 'маркер: ' + reason + ' -> ' + (mode === 'rain' ? 'дощ' : 'сніг') + ' на екрані, інтенсивність ' + lvl + ', прозорість ' + op.toFixed(3) + ' (максимум ' + base + ')');
+        }
+        function drawFx(now) {
+            if (!FX.on) return;
+            if (now - FX.last < 1000 / SCREEN_FX_FPS - 1) return;
+            var dt = Math.min(.1, (now - FX.last) / 1000), w = window.innerWidth, h = window.innerHeight, c = fxCtx, i, p;
+            FX.last = now;
+            c.clearRect(0, 0, w, h);
+            if (FX.mode === 'rain') {
+                c.strokeStyle = 'rgba(215,232,255,.9)'; c.lineWidth = 1.2; c.beginPath();
+                for (i = 0; i < FX.rain.length; i++) {
+                    p = FX.rain[i]; p.y += p.v * dt; p.x -= p.v * dt * .18;
+                    if (p.y > h + 20) { p.y = -20; p.x = Math.random() * (w + 80); }
+                    c.moveTo(p.x, p.y); c.lineTo(p.x + p.l * .18, p.y - p.l);
+                }
+                c.stroke();
+                for (i = 0; i < FX.drops.length; i++) {
+                    p = FX.drops[i]; p.y += p.v * dt * (p.r > 3 ? 1.2 : .6);
+                    if (p.y > h + 10) { p.y = -8; p.x = Math.random() * w; p.r = 1.8 + Math.random() * 3; }
+                    var g = c.createLinearGradient(p.x, p.y - p.r * 7, p.x, p.y); g.addColorStop(0, 'rgba(220,235,255,0)'); g.addColorStop(1, 'rgba(220,235,255,.8)');
+                    c.strokeStyle = g; c.lineWidth = p.r * .55; c.beginPath(); c.moveTo(p.x, p.y - p.r * 7); c.lineTo(p.x, p.y); c.stroke();
+                    var rg = c.createRadialGradient(p.x - p.r * .3, p.y - p.r * .3, 0, p.x, p.y, p.r * 1.4); rg.addColorStop(0, 'rgba(245,250,255,1)'); rg.addColorStop(.5, 'rgba(190,215,245,.6)'); rg.addColorStop(1, 'rgba(170,200,235,0)');
+                    c.fillStyle = rg; c.beginPath(); c.ellipse(p.x, p.y, p.r, p.r * 1.25, 0, 0, 6.2832); c.fill();
+                }
+            } else {
+                c.fillStyle = '#ffffff'; c.beginPath();
+                for (i = 0; i < FX.snow.length; i++) {
+                    p = FX.snow[i]; p.y += p.v * dt; p.s += dt * (.6 + p.r * .2); p.x += Math.sin(p.s) * 14 * dt;
+                    if (p.y > h + 6) { p.y = -6; p.x = Math.random() * w; }
+                    c.moveTo(p.x + p.r, p.y); c.arc(p.x, p.y, p.r, 0, 6.2832);
+                }
+                c.fill();
+            }
+        }
+        window.addEventListener('resize', function () { if (FX.on) fxSize(); });
 
         // ---------- фон "проліт крізь хмари" ----------
         var BG = [];
@@ -1559,9 +1611,9 @@
 
         // ---------- головний цикл і події ----------
         var T0 = performance.now();
-        var PERF_LOG = true, perf = { n: 0, w: 0, a: 0, b: 0, tot: 0, bg: 0, t0: performance.now() };
+        var PERF_LOG = true, perf = { n: 0, w: 0, a: 0, b: 0, x: 0, tot: 0, bg: 0, t0: performance.now() };
         function loop(now) {
-            var t = (now - T0) / 1000, p0 = performance.now(), p1, p2, p3;
+            var t = (now - T0) / 1000, p0 = performance.now(), p1, p2, p3, p4;
             if (WX.kind) drawWide(t);
             p1 = performance.now();
             if (AV.kind) {
@@ -1571,13 +1623,13 @@
             }
             p2 = performance.now();
             if (!REDUCED && now - bgLast >= 1000 / BG_FPS - 1) { drawBg(Math.min(4, (now - bgLast) / 16.667)); bgLast = now; perf.bg++; }
-            p3 = performance.now();
+            p3 = performance.now(); drawFx(now); p4 = performance.now();
             if (PERF_LOG) {
-                perf.n++; perf.w += p1 - p0; perf.a += p2 - p1; perf.b += p3 - p2; perf.tot += p3 - p0;
+                perf.n++; perf.w += p1 - p0; perf.a += p2 - p1; perf.b += p3 - p2; perf.x += p4 - p3; perf.tot += p4 - p0;
                 if (p3 - perf.t0 >= 5000) {
                     var sec = (p3 - perf.t0) / 1000, f = function (v) { return (v / perf.n).toFixed(2); };
-                    dbg('perf', 'маркер: за ' + sec.toFixed(1) + ' с -> ' + (perf.n / sec).toFixed(1) + ' fps, JS на кадр ' + f(perf.tot) + ' мс (віджет ' + f(perf.w) + ', аватарка ' + f(perf.a) + ', фон ' + f(perf.b) + '); фон малювався ' + perf.bg + ' разів (масштаб ' + BG_SCALE + ', ' + BG_FPS + ' fps); велике сонце: ' + (SUN_BIG_FAST ? 'допоміжне полотно x' + SUN_BIG_SCALE : 'вживу'));
-                    perf = { n: 0, w: 0, a: 0, b: 0, tot: 0, bg: 0, t0: p3 };
+                    dbg('perf', 'маркер: за ' + sec.toFixed(1) + ' с -> ' + (perf.n / sec).toFixed(1) + ' fps, JS на кадр ' + f(perf.tot) + ' мс (віджет ' + f(perf.w) + ', аватарка ' + f(perf.a) + ', фон ' + f(perf.b) + ', ефекти екрана ' + f(perf.x) + '); фон малювався ' + perf.bg + ' разів (масштаб ' + BG_SCALE + ', ' + BG_FPS + ' fps); велике сонце: ' + (SUN_BIG_FAST ? 'допоміжне полотно x' + SUN_BIG_SCALE : 'вживу'));
+                    perf = { n: 0, w: 0, a: 0, b: 0, x: 0, tot: 0, bg: 0, t0: p4 };
                 }
             }
             requestAnimationFrame(loop);
@@ -1640,7 +1692,7 @@
             win.classList.remove('show'); if (overlay) overlay.classList.remove('show');
             dbg('win', 'маркер: вікно "' + id + '" закрито - ' + reason);
         }
-        function verOpen(reason) { document.getElementById('verWinVer').textContent = VERSION; dbg('ver', 'маркер: вікно версії - розділ "Фічі" і підпис розробника показано (' + reason + ')'); winShow('ver', verWin, null, reason); tbVerBtn.classList.add('on'); tbVerBtn.setAttribute('aria-expanded', 'true'); }
+        function verOpen(reason) { document.getElementById('verWinVer').textContent = VERSION + ' ' + BUILD_STAMP; dbg('ver', 'маркер: вікно версії - показано версію ' + VERSION + ' ' + BUILD_STAMP + ', розділ "Фічі", підпис розробника і пошту (' + reason + ')'); winShow('ver', verWin, null, reason); tbVerBtn.classList.add('on'); tbVerBtn.setAttribute('aria-expanded', 'true'); }
         function verClose(reason) { lgHide('вікно версії закрито: ' + reason); winHide('ver', verWin, null, reason); tbVerBtn.classList.remove('on'); tbVerBtn.setAttribute('aria-expanded', 'false'); }
         function hintOpen(reason) { verClose('відкрито вікно підказки'); document.getElementById('leapCity').textContent = CITY.name; winShow('hint', hintWin, hintModal, reason); }
         function hintClose(reason) { winHide('hint', hintWin, hintModal, reason); }
