@@ -1,0 +1,19 @@
+name: HTML Linter Validation
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  htmlhint:
+    name: Lint HTML Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run HTMLHint
+        run: npx htmlhint **/*.html --ignore google*.html
