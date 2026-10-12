@@ -1,15 +1,13 @@
-name: CI/CD - Validate, Deploy and Release
+name: Deploy Static Website
 
 on:
   push:
     branches: ["main"]
-  pull_request:
-    branches: ["main"]
   workflow_dispatch:
 
 permissions:
-  contents: write   # Потрібно для створення релізів
-  pages: write      # Потрібно для деплою
+  contents: read
+  pages: write
   id-token: write
 
 concurrency:
@@ -17,34 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # -----------------------------------------------------------------
-  # ЕТАП 1: Перевірка якості коду (HTML та CSS)
-  # -----------------------------------------------------------------
-  validate:
-    name: Code Quality Checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run HTMLHint
-        run: npx htmlhint **/*.html --ignore google*.html
-
-      - name: Lint CSS
-        run: |
-          if ls *.css 1> /dev/null 2>&1; then
-            npx stylelint "*.css" --allow-empty-input
-          else
-            echo "CSS файлів не знайдено, пропускаємо."
-          fi
-
-  # -----------------------------------------------------------------
-  # ЕТАП 2: Автоматичний деплой на GitHub Pages
-  # -----------------------------------------------------------------
   deploy:
-    name: Deploy to GitHub Pages
-    needs: validate
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -60,65 +31,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: '.' 
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-  # -----------------------------------------------------------------
-  # ЕТАП 3: Оновлення GitHub Release (Автоматичне тегування)
-  # -----------------------------------------------------------------
-  release:
-    name: Update Latest Release
-    needs: deploy # Починаємо лише після успішного деплою сайту
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository code
-        uses: actions/checkout@v4
-
-      # Очищений та виправлений один крок для зчитування версії
-      - name: Extract Version from index.html
-        id: get_version
-        run: |
-          node -e "
-            const fs = require('fs');
-            const html = fs.readFileSync('index.html', 'utf8');
-            const match = html.match(/Версія:\s*([\d.]+)/i);
-            if (!match) {
-              console.error('Помилка: Не вдалося знайти версію в index.html!');
-              process.exit(1);
-            }
-            const version = match[1];
-            console.log('Знайдено версію проекту:', version);
-            fs.appendFileSync(process.env.GITHUB_ENV, 'APP_VERSION=' + version + '\n');
-          "
-
-      # НОВИЙ КРОК: Створюємо той самий ZIP-архів, який ви хочете прикріпити до релізу
-      - name: Create Release ZIP Archive
-        run: |
-          zip -r weather-ukraine-v${{ env.APP_VERSION }}.zip . -x "*.git*" ".github*"
-
-      # Публікація оновленого релізу в GitHub
-      - name: Update GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: weather-ukraine-v${{ env.APP_VERSION }}.zip
-          name: WeatherInUkraine Build v${{ env.APP_VERSION }}
-          tag_name: latest
-          make_latest: "true"
-          prerelease: false
-          overwrite: true
-          body: |
-            ## 🌤️ Актуальна стабільна збірка додатка WeatherInUkraine
-            Поточна версія сторінки: **v${{ env.APP_VERSION }}** (WeatherScope Pro).
-
-            ⏱️ _Останні зміни: ${{ github.event.head_commit.message }} (коміт ${{ github.sha }})_
-
-            ### 📦 Інструкція:
-            Цей архів містить повну резервну копію коду для версії **v${{ env.APP_VERSION }}**. 
-            Ви можете завантажити його для локального тестування або розгортання вебсторінки на власному хостингу.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
