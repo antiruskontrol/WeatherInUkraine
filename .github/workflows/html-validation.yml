@@ -15,11 +15,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. Перевірка HTML (працює завжди надійно)
+      # 1. Перевірка HTML
       - name: Run HTMLHint
         run: npx htmlhint **/*.html --ignore google*.html
 
-      # 2. Перевірка CSS (запуститься лише якщо з'являться .css файли, без крашів)
+      # 2. Перевірка CSS
       - name: Lint CSS
         run: |
           if ls *.css 1> /dev/null 2>&1; then
