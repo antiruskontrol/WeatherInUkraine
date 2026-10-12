@@ -38,10 +38,24 @@ jobs:
             fs.appendFileSync(process.env.GITHUB_ENV, 'EXT_VERSION=' + modVersion + '\n');
           "
 
-      # 2. Створюємо чистий ZIP-архів з кодом сайту WeatherInUkraine
-      - name: Create Clean App ZIP
+            # 2. Автоматично зчитуємо версію (наприклад, 1.7.0) з файлу index.html без пошуку маніфесту
+      - name: Extract Version from index.html
+        id: get_version
         run: |
-          zip -r weather-ukraine-v${{ env.EXT_VERSION }}.zip . -x "*.git*" ".github*" "weather-ukraine-*.zip"
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('index.html', 'utf8');
+            const match = html.match(/Версія:\s*([\d.]+)/i);
+            
+            if (!match) {
+              console.error('Помилка: Не вдалося знайти версію в index.html!');
+              process.exit(1);
+            }
+            
+            const version = match[1];
+            console.log('Знайдено версію проекту:', version);
+            fs.appendFileSync(process.env.GITHUB_ENV, 'APP_VERSION=' + version + '\n');
+          "
 
       # 3. Публікуємо актуальний реліз вебдодатка
       - name: Update GitHub Release
