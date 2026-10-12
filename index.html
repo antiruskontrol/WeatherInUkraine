@@ -1,7 +1,7 @@
 <!--
 ===================================================================
 Версія:       1.7.0 (WeatherScope Pro)
-Дата, час:    2026-10-11 16:24
+Дата, час:    2026-10-12 15:24
 Розробник:    Афтіпа Марко Оцтович
 -------------------------------------------------------------------
 Зміни 1.7.0 відносно 1.6.8:
@@ -231,16 +231,33 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Порівняння погоди в Києві по днях</title>
-<link rel="icon" type="image/png" sizes="144x144" href="favicon.png">
-<link rel="apple-touch-icon" href="favicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Головний заголовок сторінки для пошукової видачі -->
+    <title>Порівняння погоди в Україні по днях | Графіки та аналітика</title>
+    
+    <!-- Мета-опис (оптимізований під Україну та Київ) -->
+    <meta name="description" content="Детальний аналіз та інтерактивне порівняння погоди в містах України по днях. Зручні онлайн-графіки температури, опадів та тривалості світлового дня.">
+    <meta name="keywords" content="погода в україні, порівняння погоди, графік температури, аналітика погоди, погода київ, зміна погоди по днях">
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
+    <!-- Іконки сайту (Favicon) -->
+    <link rel="icon" type="image/png" sizes="144x144" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
+
+    <!-- Open Graph розмітка для відображення посилань у соцмережах (Telegram, Viber, Facebook) -->
+    <meta property="og:title" content="Порівняння погоди в Україні по днях | Графіки та аналітика">
+    <meta property="og:description" content="Інтерактивні графіки погоди, температури, опадів та сонячної активності в містах України.">
+    <meta property="og:type" content="website">
+    <!-- <meta property="og:image" content="https://yourdomain.com"> --> <!-- Рекомендується додати прев'ю-картинку -->
+
+    <!-- Асинхронне завантаження важких скриптів для високої швидкості PageSpeed -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js" defer></script>
+
     <style>
+
         :root { --neon: #3b82f6; --neon-glow: 0 0 6px #3b82f6, 0 0 18px rgba(59,130,246,.65); }
         body { background:#111827; color:#f3f4f6; font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; margin:0; padding:24px; display:flex; justify-content:center; }
         .container { max-width:1100px; width:100%; background:#1f2937; border:1px solid #374151; border-radius:12px; padding:24px; box-shadow:0 10px 25px -5px rgba(0,0,0,.3); }
@@ -479,7 +496,7 @@
                 <circle cx="23" cy="9" r="1.6" fill="#60a5fa" stroke="none"/>
             </svg>
             <span>Порівняльний аналіз клімату</span>
-            <span class="title-city" id="cityName">Київ</span>
+            <span class="title-city" id="cityName">Україна</span>
         </h1>
         <div class="title-rule"></div>
 
