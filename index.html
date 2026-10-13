@@ -1,9 +1,19 @@
 <!--
 ===================================================================
-Версія:       1.7.1 (WeatherScope Pro)
-Дата, час:    2026-10-13 06:53
+Версія:       1.7.2 (WeatherScope Pro)
+Дата, час:    2026-10-13 12:11
 Розробник:    Афтіпа Марко Оцтович
 -------------------------------------------------------------------
+Зміни 1.7.2 відносно 1.7.1:
+ 1. Під вікнами (версії, підказки, меню лого) більше не проступає текст інтерфейсу: додано окремий шар
+    "матового скла" (.ww-glass) під фоном вікна - повна непрозорість, розмиття WIN_GLASS_BLUR = 16 px і напівтемна
+    підкладка WIN_GLASS_TINT = 0,5. Причина: прозорість 69% стояла на тому самому елементі, що й розмиття, і 31%
+    нерозмитої сторінки лишалось видно. Вигляд самого вікна (прозорість 69% з диханням, неон, хвилі) не змінено.
+    Нюанс: у першу секунду повільної появи вікна скло ще не діє.
+ 2. Прибрано backdrop-filter із .ww-bg (його замінило окреме скло).
+ 3. Favicon виправлено користувачем окремо - у цій збірці не змінювався.
+ 4. Назва файлу: index_v1.7.2_2026-10-13.html.
+
 Зміни 1.7.1 відносно 1.7.0:
  1. Вікно версії спливає при НАВЕДЕННІ на напис версії (без кліку); закривається, коли курсор залишив кнопку,
     вікно версії та меню лого (затримка 0,45 с). На сенсорних екранах - по дотику (перемикач).
@@ -242,36 +252,15 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
+ <link rel="icon" type="image/png" href="favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <title>Порівняння погоди в Києві по днях</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <link rel="apple-touch-icon" href="favicon.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
-    
-    <!-- Головний заголовок сторінки для пошукової видачі -->
-    <title>Порівняння погоди в Україні по днях | Графіки та аналітика</title>
-
-    <link rel="apple-touch-icon" sizes="144x144" href="favicon.png">
-    <link rel="icon" type="image/png" sizes="144x144" href="favicon.png">
- 
-    <!-- Мета-опис (оптимізований під Україну та Київ) -->
-    <meta name="description" content="Детальний аналіз та інтерактивне порівняння погоди в містах України по днях. Зручні онлайн-графіки температури, опадів та тривалості світлового дня.">
-    <meta name="keywords" content="погода в україні, порівняння погоди, графік температури, аналітика погоди, погода київ, зміна погоди по днях">
-
-   
-    <!-- Open Graph розмітка для відображення посилань у соцмережах (Telegram, Viber, Facebook) -->
-    <meta property="og:title" content="Порівняння погоди в Україні по днях | Графіки та аналітика">
-    <meta property="og:description" content="Інтерактивні графіки погоди, температури, опадів та сонячної активності в містах України.">
-    <meta property="og:type" content="website">
-    <!-- <meta property="og:image" content="https://yourdomain.com"> --> <!-- Рекомендується додати прев'ю-картинку -->
-
-    <!-- Асинхронне завантаження важких скриптів для високої швидкості PageSpeed -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js" defer></script>
-
     <style>
         :root { --neon: #3b82f6; --neon-glow: 0 0 6px #3b82f6, 0 0 18px rgba(59,130,246,.65); }
         body { background:#111827; color:#f3f4f6; font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; margin:0; padding:24px; display:flex; justify-content:center; }
@@ -354,7 +343,7 @@
         .wave-win.show { opacity:1; transition:opacity 1.5s ease; }
         #verWin { position:fixed; top:56px; right:20px; z-index:130; width:min(440px, calc(100vw - 40px)); visibility:hidden; --wwmax:calc(100vh - 90px); transition:opacity .3s ease, visibility 0s .3s; }
         #verWin.show { visibility:visible; transition:opacity 1.5s ease, visibility 0s; }
-        .ww-bg { position:absolute; inset:0; border-radius:12px; background:linear-gradient(160deg, rgba(31,41,55,.92), rgba(17,24,39,.95)); border:1px solid rgba(249,115,22,.45); box-shadow:0 0 22px rgba(249,115,22,.28), inset 0 0 28px rgba(249,115,22,.1); backdrop-filter:blur(6px); filter:url(#waveBg); overflow:hidden; }
+        .ww-bg { position:absolute; inset:0; border-radius:12px; background:linear-gradient(160deg, rgba(31,41,55,.92), rgba(17,24,39,.95)); border:1px solid rgba(249,115,22,.45); box-shadow:0 0 22px rgba(249,115,22,.28), inset 0 0 28px rgba(249,115,22,.1); filter:url(#waveBg); overflow:hidden; }
         .ww-body { position:relative; box-sizing:border-box; max-height:var(--wwmax); overflow:auto; padding:24px 28px; color:rgba(251,191,36,.60); font-size:14px; line-height:1.6; text-shadow:0 0 6px rgba(249,115,22,.9), 0 0 18px rgba(249,115,22,.5); filter:url(#waveTx); animation:wwGlow 4.5s ease-in-out infinite; scrollbar-width:thin; scrollbar-color:rgba(249,115,22,.5) transparent; }
         @keyframes wwGlow { 0%,100% { text-shadow:0 0 5px rgba(249,115,22,.8), 0 0 14px rgba(249,115,22,.4); } 50% { text-shadow:0 0 8px rgba(249,115,22,1), 0 0 22px rgba(249,115,22,.65); } }
         .ww-body h2, .ww-body h3 { margin:0 0 8px; font-weight:500; background:linear-gradient(90deg,#fbbf24,#f97316); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; text-shadow:none; opacity:.65; filter:drop-shadow(0 0 7px rgba(249,115,22,.75)); }
@@ -409,6 +398,8 @@
         /* ---------- v1.7.1: друге лого, підпис "Наші проєкти" ---------- */
         .ww-foot { display:flex; flex-wrap:wrap; align-items:center; gap:0 14px; }
         .ww-foot-h { width:100%; margin:0 0 8px; font-size:11.5px; color:rgba(251,191,36,.6); opacity:.75; text-shadow:0 0 5px rgba(249,115,22,.8), 0 0 14px rgba(249,115,22,.4); }
+        /* ---------- v1.7.2: матове скло під вікнами ---------- */
+        .ww-glass { position:absolute; inset:3px; border-radius:10px; background:rgba(12,18,28,var(--wwg-tint, .5)); -webkit-backdrop-filter:blur(var(--wwg-blur, 16px)) saturate(120%); backdrop-filter:blur(var(--wwg-blur, 16px)) saturate(120%); pointer-events:none; }
     </style>
 </head>
 <body>
@@ -443,6 +434,7 @@
         <button type="button" id="tbVer" aria-haspopup="dialog" aria-expanded="false"></button>
     </div>
     <div class="wave-win" id="verWin" role="dialog" aria-labelledby="verTitle">
+        <div class="ww-glass"></div>
         <div class="ww-bg"></div>
         <div class="ww-body">
             <button type="button" class="ww-x" id="verClose" aria-label="Закрити">&times;</button>
@@ -482,6 +474,7 @@
     </div>
 
     <div class="wave-win" id="lg2Pop" role="dialog" aria-label="BanderiZZation">
+        <div class="ww-glass"></div>
         <div class="ww-bg"></div>
         <div class="ww-body">
             <h2>BanderiZZation!</h2>
@@ -491,6 +484,7 @@
     </div>
 
     <div class="wave-win" id="lgPop" role="dialog" aria-label="Antirus-Control">
+        <div class="ww-glass"></div>
         <div class="ww-bg"></div>
         <div class="ww-body">
             <h2>Antirus-Control</h2>
@@ -501,7 +495,8 @@
 
     <div class="modal" id="hintModal">
         <div class="wave-win" id="hintWin" role="dialog" aria-modal="true" aria-labelledby="hintTitle">
-            <div class="ww-bg"></div>
+            <div class="ww-glass"></div>
+        <div class="ww-bg"></div>
             <div class="ww-body">
                 <button type="button" class="ww-x" id="hintClose" aria-label="Закрити">&times;</button>
                 <h2 id="hintTitle">Як користуватися графіком</h2>
@@ -588,7 +583,7 @@
 
     <script>
         var CITY = { name: 'Київ', lat: '50.4501', lon: '30.5234' };
-        var VERSION = '1.7.1'; var BUILD_STAMP = '13.10.2026, 06:53';   // дата й час редакції (оновлюється в кожній збірці) // оновлювати разом із шапкою файлу
+        var VERSION = '1.7.2'; var BUILD_STAMP = '13.10.2026, 12:11';   // дата й час редакції (оновлюється в кожній збірці) // оновлювати разом із шапкою файлу
         var DEBUG = true;
         function dbg(marker, info) { if (DEBUG) console.log('[WeatherScope][' + marker + ']', info === undefined ? '' : info); }
 
@@ -1703,10 +1698,13 @@
         var WAVE_SCALE_BG = 4;      // сила хвиль для рамки/фону вікна (px)
         var WAVE_SCALE_TX = 3.5;    // сила хвиль для тексту (px)
         var SWAY_PX = 1.5;          // амплітуда похитування рядків (px)
+        var WIN_GLASS_BLUR = 16;    // розмиття "матового скла" під вікнами (px), щоб текст сторінки не проступав
+        var WIN_GLASS_TINT = 0.5;   // затемнення скла (0-1)
         document.documentElement.style.setProperty('--swp', SWAY_PX);
+        document.documentElement.style.setProperty('--wwg-blur', WIN_GLASS_BLUR + 'px'); document.documentElement.style.setProperty('--wwg-tint', WIN_GLASS_TINT);
         document.querySelector('#waveBg feDisplacementMap').setAttribute('scale', WAVE_SCALE_BG);
         document.querySelector('#waveTx feDisplacementMap').setAttribute('scale', WAVE_SCALE_TX);
-        dbg('win', 'маркер: параметри вікон -> прозорість ' + WIN_OPACITY + ' +-' + WIN_BREATH + ', поява ' + WIN_FADE_MS + ' мс, хвилі ' + WAVE_SCALE_BG + '/' + WAVE_SCALE_TX + ', похитування ' + SWAY_PX + ' px');
+        dbg('win', 'маркер: параметри вікон -> прозорість ' + WIN_OPACITY + ' +-' + WIN_BREATH + ', поява ' + WIN_FADE_MS + ' мс, хвилі ' + WAVE_SCALE_BG + '/' + WAVE_SCALE_TX + ', похитування ' + SWAY_PX + ' px, матове скло ' + WIN_GLASS_BLUR + ' px / затемнення ' + WIN_GLASS_TINT);
 
         // ---------- керування вікнами та анімація хвиль ----------
         var wtBg = document.getElementById('wtBg'), wtTx = document.getElementById('wtTx');
