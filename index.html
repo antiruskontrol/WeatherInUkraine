@@ -1,9 +1,22 @@
 <!--
 ===================================================================
-Версія:       1.7.2 (WeatherScope Pro)
-Дата, час:    2026-10-13 12:11
+Версія:       1.7.3 (WeatherScope Pro)
+Дата, час:    2026-10-15 00:41
 Розробник:    Афтіпа Марко Оцтович
 -------------------------------------------------------------------
+Зміни 1.7.3 відносно 1.7.2:
+ 1. Верхня панель ПРИКЛЕЄНА: завжди на екрані, не зникає при прокрутці (TOPBAR_PIN = true; false повертає зникання).
+    Під панеллю напівпрозора темна підкладка без backdrop-filter (щоб текст сторінки не накладався на дату й кнопки
+    і не повертати гальмування). Вікно версії більше не закривається від прокрутки.
+ 2. "Липкий" рядок "Підказка / Скинути масштаб" прикріплюється нижче панелі (відступ 58 px замість 10 px).
+ 3. РІЗНОМАНІТТЯ ПТАХІВ: шість видів (горобець, синиця, зарянка, припутень, ластівка, дятел); дрізда, зозулі
+    й ворони немає. За сезонами: весна - зарянка, синиця, горобець, припутень, дятел; літо - ластівка, горобець,
+    припутень, зарянка, синиця; осінь - синиця, горобець, припутень, зарянка, дятел; ЗИМА - птахів немає.
+    Кожен виклик трохи інший (висота, швидкість, кількість нот), різна панорама й відстань (гучність і приглушення),
+    той самий вид не повторюється двічі поспіль. Умови без змін: вдень, коли сонячно, без опадів і сильного вітру.
+ 4. Дебаг-принти audio: вид птаха, панорама, відстань, густота; topbar: приклеєну панель показано.
+ 5. Назва файлу: index_v1.7.3_2026-10-15.html.
+
 Зміни 1.7.2 відносно 1.7.1:
  1. Під вікнами (версії, підказки, меню лого) більше не проступає текст інтерфейсу: додано окремий шар
     "матового скла" (.ww-glass) під фоном вікна - повна непрозорість, розмиття WIN_GLASS_BLUR = 16 px і напівтемна
@@ -333,7 +346,7 @@
         #topbar.tb-hide > * { pointer-events:none; }
         #topbar #tbVer { justify-self:end; background:transparent; border-color:transparent; color:rgba(243,244,246,.62); padding:0 10px; backdrop-filter:none; }
         #topbar #tbVer:hover, #topbar #tbVer:focus-visible, #topbar #tbVer.on { color:#fdba74; border-color:var(--orange); box-shadow:var(--orange-glow); background:rgba(249,115,22,.08); outline:none; }
-        .chart-header { position:sticky; top:10px; z-index:40; padding:8px 10px; margin:-8px -10px 8px; border:1px solid transparent; border-radius:8px; transition:background .25s, border-color .25s; }
+        .chart-header { position:sticky; top:var(--chh-top, 10px); z-index:40; padding:8px 10px; margin:-8px -10px 8px; border:1px solid transparent; border-radius:8px; transition:background .25s, border-color .25s; }
         .chart-header.stuck { background:rgba(17,24,39,.72); border-color:rgba(75,85,99,.55); backdrop-filter:blur(6px); }
         .hint-btn { color:hsl(268,54%,72%); }
 
@@ -400,6 +413,8 @@
         .ww-foot-h { width:100%; margin:0 0 8px; font-size:11.5px; color:rgba(251,191,36,.6); opacity:.75; text-shadow:0 0 5px rgba(249,115,22,.8), 0 0 14px rgba(249,115,22,.4); }
         /* ---------- v1.7.2: матове скло під вікнами ---------- */
         .ww-glass { position:absolute; inset:3px; border-radius:10px; background:rgba(12,18,28,var(--wwg-tint, .5)); -webkit-backdrop-filter:blur(var(--wwg-blur, 16px)) saturate(120%); backdrop-filter:blur(var(--wwg-blur, 16px)) saturate(120%); pointer-events:none; }
+        /* ---------- v1.7.3: приклеєна верхня панель ---------- */
+        #topbar.tb-pinned::before { content:''; position:absolute; left:0; right:0; top:0; bottom:0; z-index:-1; background:linear-gradient(180deg, rgba(12,18,28,.9), rgba(12,18,28,.8)); border-bottom:1px solid rgba(75,85,99,.35); pointer-events:none; }
     </style>
 </head>
 <body>
@@ -478,7 +493,7 @@
         <div class="ww-bg"></div>
         <div class="ww-body">
             <h2>BanderiZZation!</h2>
-            <p>Платформа казуальних ігор з яскравим українським колоритом, гумором та мемамита украйнських фільмів та мультфільмів(яких ви ніколи не бачили!)</p>
+            <p>Платформа казуальних ігор з яскравим українським колоритом, гумором та мемами.</p>
             <a class="ww-link" id="lg2Link" href="https://antiruskontrol.github.io/BanderiZZation/index.html" target="_blank" rel="noopener">Перейти на сайт</a>
         </div>
     </div>
@@ -583,7 +598,7 @@
 
     <script>
         var CITY = { name: 'Київ', lat: '50.4501', lon: '30.5234' };
-        var VERSION = '1.7.2'; var BUILD_STAMP = '13.10.2026, 12:11';   // дата й час редакції (оновлюється в кожній збірці) // оновлювати разом із шапкою файлу
+        var VERSION = '1.7.3'; var BUILD_STAMP = '15.10.2026, 00:41';   // дата й час редакції (оновлюється в кожній збірці) // оновлювати разом із шапкою файлу
         var DEBUG = true;
         function dbg(marker, info) { if (DEBUG) console.log('[WeatherScope][' + marker + ']', info === undefined ? '' : info); }
 
@@ -1532,20 +1547,48 @@
             var rng = ENV.code === 95 ? [25, 60] : [12, 35];
             A.tT = setTimeout(function () { if (!A.on || !ENV.storm) { A.tT = 0; return; } thunder(false, 'гроза в місті користувача (код ' + ENV.code + ')'); nextThunder(); }, (rng[0] + Math.random() * (rng[1] - rng[0])) * 1000);
         }
+        // ---------- v1.7.3: різноманіття птахів (шість видів, синтез у браузері) ----------
+        var BIRD_GAIN = .35;    // загальна гучність птахів
+        var BIRD_SPECIES = { spring: ['robin', 'tit', 'sparrow', 'dove', 'wood'], summer: ['swallow', 'sparrow', 'dove', 'robin', 'tit'], autumn: ['tit', 'sparrow', 'dove', 'robin', 'wood'], winter: [] };
+        function bR(a, b) { return a + Math.random() * (b - a); }
+        function birdTone(o) {
+            var osc = AC.createOscillator(), g = AC.createGain(), p = AC.createStereoPanner(), f = AC.createBiquadFilter(), lpf = o.lp || 9000;
+            osc.type = o.type || 'sine';
+            osc.frequency.setValueAtTime(o.f0, o.t); osc.frequency.exponentialRampToValueAtTime(Math.max(60, o.f1 || o.f0), o.t + o.d);
+            g.gain.setValueAtTime(.0001, o.t); g.gain.exponentialRampToValueAtTime(o.g * o.v * BIRD_GAIN, o.t + Math.min(.02, o.d * .3)); g.gain.exponentialRampToValueAtTime(.0001, o.t + o.d);
+            f.type = 'lowpass'; f.frequency.value = Math.min(lpf, 9000 - 5500 * o.dist); p.pan.value = o.pan;
+            if (o.vib) { var l = AC.createOscillator(), lg = AC.createGain(); l.frequency.value = o.vib[0]; lg.gain.value = o.vib[1]; l.connect(lg); lg.connect(osc.frequency); l.start(o.t); l.stop(o.t + o.d + .05); }
+            osc.connect(g); g.connect(f); f.connect(p); p.connect(A.master); osc.start(o.t); osc.stop(o.t + o.d + .05);
+        }
+        function birdClick(t, gn, pan, v) {
+            var s2 = AC.createBufferSource(), g = AC.createGain(), f = AC.createBiquadFilter(), p = AC.createStereoPanner();
+            s2.buffer = A.white; f.type = 'bandpass'; f.frequency.value = 1500; f.Q.value = 1.2;
+            g.gain.setValueAtTime(gn * v * BIRD_GAIN, t); g.gain.exponentialRampToValueAtTime(.0001, t + .025); p.pan.value = pan;
+            s2.connect(f); f.connect(g); g.connect(p); p.connect(A.master); s2.start(t, Math.random() * .5, .03);
+        }
+        var BIRDS = {
+            sparrow: { n: 'Горобець', d: 'чірік-чірік', f: function (t, p, v, d) { for (var i = 0; i < 4; i++) birdTone({ f0: bR(3100, 3500), f1: 2600, t: t + i * .17 + bR(0, .03), d: .07, g: .2, type: 'triangle', pan: p, lp: 7000, v: v, dist: d }); } },
+            tit: { n: 'Синиця', d: 'ци-ци-пі', f: function (t, p, v, d) { for (var k = 0; k < 2; k++) { var b = t + k * .45; birdTone({ f0: 6200, f1: 5400, t: b, d: .05, g: .11, pan: p, v: v, dist: d }); birdTone({ f0: 6200, f1: 5400, t: b + .09, d: .05, g: .11, pan: p, v: v, dist: d }); birdTone({ f0: 4300, f1: 3800, t: b + .19, d: .1, g: .12, pan: p, v: v, dist: d }); } } },
+            robin: { n: 'Зарянка', d: 'дзвінка трель', f: function (t, p, v, d) { var c = t; for (var i = 0; i < 10; i++) { var f0 = bR(2600, 5400), dd = bR(.04, .12); birdTone({ f0: f0, f1: f0 * bR(.7, 1.4), t: c, d: dd, g: .1, pan: p, vib: [28, 50], v: v, dist: d }); c += dd + bR(.03, .07); } } },
+            dove: { n: 'Припутень', d: 'гу-гу-гууу', f: function (t, p, v, d) { [[0, .22, 420], [.34, .2, 450], [.64, .5, 430]].forEach(function (n) { birdTone({ f0: n[2], f1: n[2] * .97, t: t + n[0], d: n[1], g: .26, pan: p, lp: 1200, vib: [4, 10], v: v, dist: d }); }); } },
+            swallow: { n: 'Ластівка', d: 'швидке щебетання', f: function (t, p, v, d) { for (var i = 0; i < 14; i++) birdTone({ f0: bR(4400, 6000), f1: bR(4000, 6000), t: t + i * .065, d: .045, g: .11, type: 'triangle', pan: p, v: v, dist: d }); } },
+            wood: { n: 'Дятел', d: 'дрібний стукіт', f: function (t, p, v, d) { for (var i = 0; i < 12; i++) birdClick(t + i * .055, .5, p, v * (1 - .5 * d)); } }
+        };
         function chirp() {
             clearTimeout(A.bT);
             if (!A.on) return;
             if (A.birdsOn && A.bird > 0) {
-                var n = 2 + Math.floor(Math.random() * 3), f0 = 2200 + Math.random() * 2000, pn = Math.random() * 1.6 - .8, t = AC.currentTime;
-                for (var i = 0; i < n; i++) {
-                    var o = AC.createOscillator(), g = AC.createGain(), pa = AC.createStereoPanner(), t0 = t + i * .13;
-                    o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f0 * (1.3 + Math.random() * .5), t0 + .09);
-                    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.05 * A.bird, t0 + .02); g.gain.linearRampToValueAtTime(0, t0 + .1);
-                    pa.pan.value = pn; o.connect(g); g.connect(pa); pa.connect(A.master); o.start(t0); o.stop(t0 + .12);
+                var list = BIRD_SPECIES[A.season] || [];
+                if (list.length) {
+                    var key, tries = 0;
+                    do { key = list[Math.floor(Math.random() * list.length)]; tries++; } while (key === A.lastBird && list.length > 1 && tries < 5);
+                    A.lastBird = key;
+                    var pan = bR(-.9, .9), dist = Math.random(), v = A.bird * (1 - .5 * dist);
+                    BIRDS[key].f(AC.currentTime + .03, pan, v, dist);
+                    dbg('audio', 'маркер: птах "' + BIRDS[key].n + '" (' + BIRDS[key].d + '), панорама ' + pan.toFixed(2) + ', відстань ' + dist.toFixed(2) + ', густота сезону ' + A.bird + ' (' + A.season + ')');
                 }
-                dbg('audio', 'маркер: пташиний щебет, нот ' + n + ' (сонячно, густота ' + A.bird + ')');
             }
-            A.bT = setTimeout(chirp, (2500 + Math.random() * 9000) / Math.max(.3, A.bird || 1));
+            A.bT = setTimeout(chirp, (2500 + Math.random() * 8500) / Math.max(.3, A.bird || 1));
         }
         function toggleAtmo(reason) {
             if (A.on) stopAtmo(); else startAtmo();
@@ -1838,15 +1881,19 @@
         document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { hintClose('Esc'); verClose('Esc'); } });
 
         // ---------- верхня панель зникає при прокрутці; рядок над графіком "липкий" ----------
+        var TOPBAR_PIN = true;      // true = верхня панель приклеєна (завжди видима); false = зникає при прокрутці
         var tbEl = document.getElementById('topbar'), chHead = document.querySelector('.chart-header'), tbHidden = false, chStuck = false;
+        var chTop = TOPBAR_PIN ? 58 : 10;
+        document.documentElement.style.setProperty('--chh-top', chTop + 'px');
+        if (TOPBAR_PIN) { tbEl.classList.add('tb-pinned'); dbg('topbar', 'маркер: верхню панель приклеєно (TOPBAR_PIN = true): завжди видима, підкладка без розмиття, липкий рядок графіка нижче на ' + chTop + ' px'); }
         function onPageScroll() {
-            var y = window.scrollY || document.documentElement.scrollTop || 0, hide = y > 40;
+            var y = window.scrollY || document.documentElement.scrollTop || 0, hide = !TOPBAR_PIN && y > 40;
             if (hide !== tbHidden) {
                 tbHidden = hide; tbEl.classList.toggle('tb-hide', hide);
                 dbg('topbar', 'маркер: верхню панель ' + (hide ? 'сховано' : 'показано') + ' (прокрутка ' + Math.round(y) + ' px)');
                 if (hide) verClose('верхня панель сховалась при прокрутці');
             }
-            var stuck = chHead.getBoundingClientRect().top <= 11 && y > 0;
+            var stuck = chHead.getBoundingClientRect().top <= chTop + 1 && y > 0;
             if (stuck !== chStuck) {
                 chStuck = stuck; chHead.classList.toggle('stuck', stuck);
                 dbg('sticky', 'маркер: рядок "Підказка / Скинути масштаб" ' + (stuck ? 'прикріплено до верху екрана' : 'відкріплено (на своєму місці)'));
