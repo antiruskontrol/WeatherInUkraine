@@ -1,9 +1,24 @@
 <!--
 ===================================================================
-Версія:       1.7.4 (WeatherScope Pro)
-Дата, час:    2026-10-15 13:06
+Версія:       1.8.0 (WeatherScope Pro)
+Дата, час:    2026-10-16 13:33
 Розробник:    Афтіпа Марко Оцтович
 -------------------------------------------------------------------
+Зміни 1.8.0 відносно 1.7.4 (небо за часом доби):
+ 1. ФОН САЙТУ (з паралаксом) відображає реальні кольори доби за ВИСОТОЮ СОНЦЯ в місті КОРИСТУВАЧА (SKY_SOURCE = 'user';
+    'city' - за містом на графіку): ніч - темно-синій; ранкові/вечірні сутінки - глибокий індиго, НЕОНОВО-ПУРПУРОВИЙ,
+    неонова малина, помаранчевий, бурштиновий, теплий жовтий; день - світло-блакитний. Дата враховується автоматично.
+    Колір неба змінюється плавно (~3 с) і перераховується кожні 30 с.
+ 2. Погода користувача трохи змінює палітру (SKY_WEATHER_MIX): хмарно - менше насиченості й темніше; дощ - сіро-синій;
+    гроза - темніше з фіолетовим; сніг - світліше й холодніше.
+ 3. Варіант А: текст лишається білим; під небом додається затемнювальна підкладка так, щоб яскравість фону не
+    перевищувала SKY_MAX_LUM = 0,25 (темні фази - без підкладки, яскравий день - підкладка до ~40%).
+ 4. Паралакс-плями беруть колір горизонту поточного неба. SKY_ON = false повертає старе тло (колір за погодою).
+ 5. Тест: параметр ?sky=ГГ:ХХ у посиланні або SKY_TEST(година) у консолі; ?skydemo=1 - доба за ~30 с.
+ 6. Приклеєна верхня панель: підкладка тепер окремий елемент #tbBack (замість ::before), щоб гарантовано не перекривати
+    кнопки "Атмосфера / Сезон / громові"; дебаг-принт topbar показує розміри й видимість центральних кнопок.
+ 7. Дебаг-принти sky: висота сонця, фаза, кольори, підкладка, поправка погоди. Назва файлу: index_v1.8.0_2026-10-16.html.
+
 Зміни 1.7.4 відносно 1.7.3 (злиття зір з v1.6.9):
  1. До лінії v1.7.x додано зорі вночі й затемнення фону віджета з окремої збірки v1.6.9 (код перенесено без змін):
     STAR_COUNT_DESKTOP = 50 / STAR_COUNT_MOBILE = 25 (вузькі екрани < 600 px), STAR_BIG = 6 зірок з іскрою-хрестиком,
@@ -425,7 +440,8 @@
         /* ---------- v1.7.2: матове скло під вікнами ---------- */
         .ww-glass { position:absolute; inset:3px; border-radius:10px; background:rgba(12,18,28,var(--wwg-tint, .5)); -webkit-backdrop-filter:blur(var(--wwg-blur, 16px)) saturate(120%); backdrop-filter:blur(var(--wwg-blur, 16px)) saturate(120%); pointer-events:none; }
         /* ---------- v1.7.3: приклеєна верхня панель ---------- */
-        #topbar.tb-pinned::before { content:''; position:absolute; left:0; right:0; top:0; bottom:0; z-index:-1; background:linear-gradient(180deg, rgba(12,18,28,.9), rgba(12,18,28,.8)); border-bottom:1px solid rgba(75,85,99,.35); pointer-events:none; }
+        #tbBack { display:none; position:fixed; left:0; right:0; top:0; height:48px; z-index:49; background:linear-gradient(180deg, rgba(12,18,28,.9), rgba(12,18,28,.8)); border-bottom:1px solid rgba(75,85,99,.35); pointer-events:none; }
+        #tbBack.on { display:block; }
     </style>
 </head>
 <body>
@@ -450,6 +466,7 @@
     <canvas id="bgCanvas"></canvas>
     <canvas id="fxCanvas"></canvas>
     <div id="flash"></div>
+    <div id="tbBack"></div>
     <div id="topbar">
         <span id="tbInfo"><span id="tbDt"></span> <svg id="tbFlag" width="22" height="15" viewBox="0 0 22 15" aria-hidden="true"><defs><clipPath id="flagClip"><rect width="22" height="15" rx="2.2"/></clipPath></defs><g clip-path="url(#flagClip)"><rect width="22" height="7.5" fill="#0057b7"/><rect y="7.5" width="22" height="7.5" fill="#ffd700"/></g><rect width="22" height="15" rx="2.2" fill="none" stroke="rgba(255,255,255,.22)" stroke-width=".6"/></svg> <span id="tbCityN"></span></span>
         <div class="tb-center">
@@ -609,7 +626,7 @@
 
     <script>
         var CITY = { name: 'Київ', lat: '50.4501', lon: '30.5234' };
-        var VERSION = '1.7.4'; var BUILD_STAMP = '15.10.2026, 13:06';   // дата й час редакції (оновлюється в кожній збірці) // оновлювати разом із шапкою файлу
+        var VERSION = '1.8.0'; var BUILD_STAMP = '16.10.2026, 13:33';   // дата й час редакції (оновлюється в кожній збірці) // оновлювати разом із шапкою файлу
         var DEBUG = true;
         function dbg(marker, info) { if (DEBUG) console.log('[WeatherScope][' + marker + ']', info === undefined ? '' : info); }
 
@@ -1765,11 +1782,86 @@
         }
         var BG_COL = { sun: '255,226,160', moon: '150,170,235', partly: '186,200,225', cloud: '160,174,196', rain: '115,145,200', storm: '95,105,150', snow: '230,240,255' };
         var BG_SPD = { storm: 2, rain: 1.4 };
+        // ---------- v1.8.0: небо за часом доби (висота сонця) ----------
+        var SKY_ON = true;              // false = старе тло (колір за погодою)
+        var SKY_SOURCE = 'user';        // 'user' = небо в місті користувача, 'city' = в місті, обраному на графіку
+        var SKY_MAX_LUM = 0.25;         // макс. яскравість фону під білим текстом (0-1, відносна світність)
+        var SKY_WEATHER_MIX = 1;        // сила впливу погоди на кольори неба (0 = немає)
+        var SKY_UPDATE_MS = 30000;      // як часто перераховувати небо
+        var SKY_K = [   // [висота сонця в градусах, колір верху неба, колір горизонту]
+            [-18, '#03050b', '#070b18'],    // ніч
+            [-12, '#0a0f2a', '#2a1a6a'],    // глибокі сутінки: індиго
+            [-6,  '#2a1f6e', '#b44cff'],    // навігаційні сутінки: неоново-пурпуровий
+            [-2,  '#3d2a8f', '#ff3fb4'],    // цивільні сутінки: неонова малина
+            [0,   '#4a3a9a', '#ff7a2f'],    // схід/захід: помаранчевий
+            [4,   '#5a6bc0', '#ffb13d'],    // золота година: бурштин
+            [10,  '#4f84c4', '#ffd98a'],    // теплий жовтий
+            [25,  '#4f8fd0', '#a9d0f0'],    // день
+            [60,  '#3d7fc9', '#9ccaf0']     // зеніт
+        ];
+        var SKY_W = {   // поправки погоди: d - зменшення насиченості, k - затемнення, t - відтінок, m - частка відтінку
+            sun: { d: 0, k: 0, t: [0, 0, 0], m: 0 }, moon: { d: 0, k: 0, t: [0, 0, 0], m: 0 }, partly: { d: .15, k: .05, t: [130, 140, 155], m: .08 },
+            cloud: { d: .35, k: .12, t: [120, 130, 145], m: .15 }, rain: { d: .5, k: .3, t: [70, 90, 120], m: .25 },
+            storm: { d: .55, k: .45, t: [60, 50, 90], m: .3 }, snow: { d: .3, k: 0, t: [200, 215, 235], m: .25 }
+        };
+        var SKY_FORCE = null, SKY_DEMO = /[?&]skydemo/.test(location.search);
+        var skyM = /[?&]sky=(\d{1,2}):(\d{2})/.exec(location.search); if (skyM) SKY_FORCE = +skyM[1] + (+skyM[2]) / 60;
+        window.SKY_TEST = function (h) { SKY_FORCE = (h === undefined || h === null) ? null : +h; SKY.last = 0; dbg('sky', 'маркер: SKY_TEST(' + h + ') - ' + (SKY_FORCE === null ? 'повернуто реальний час' : 'примусова година ' + SKY_FORCE)); };
+        function skyHex(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+        function skyMixC(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+        function skyLum(c) { function f(v) { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); } return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); }
+        function skyColorsAt(alt, kind) {
+            var a = Math.max(-18, Math.min(60, alt)), i = 0, w = SKY_W[kind] || SKY_W.sun, mx = SKY_WEATHER_MIX;
+            while (i < SKY_K.length - 2 && a > SKY_K[i + 1][0]) i++;
+            var t = (a - SKY_K[i][0]) / (SKY_K[i + 1][0] - SKY_K[i][0]); t = t * t * (3 - 2 * t);
+            var top = skyMixC(skyHex(SKY_K[i][1]), skyHex(SKY_K[i + 1][1]), t), hor = skyMixC(skyHex(SKY_K[i][2]), skyHex(SKY_K[i + 1][2]), t);
+            function mod(c) {
+                var L = .3 * c[0] + .59 * c[1] + .11 * c[2], d = w.d * mx, o = [L + (c[0] - L) * (1 - d), L + (c[1] - L) * (1 - d), L + (c[2] - L) * (1 - d)];
+                o = o.map(function (v) { return v * (1 - w.k * mx); });
+                return skyMixC(o, w.t, w.m * mx);
+            }
+            top = mod(top); hor = mod(hor);
+            var L2 = (skyLum(top) + skyLum(hor)) / 2, scrim = L2 > SKY_MAX_LUM ? Math.min(.75, 1 - SKY_MAX_LUM / L2) : 0;
+            return { top: top, hor: hor, scrim: scrim, night: Math.max(0, Math.min(1, (-4 - alt) / 8)) };
+        }
+        function skyPhase(alt, morning) {
+            if (alt < -12) return 'ніч'; if (alt < -6) return morning ? 'ранкові сутінки (навігаційні)' : 'вечірні сутінки (навігаційні)';
+            if (alt < 0) return morning ? 'світанок (цивільні сутінки)' : 'захід (цивільні сутінки)'; if (alt < 8) return morning ? 'ранок, золота година' : 'вечір, золота година';
+            return 'день';
+        }
+        var SKY = { last: 0, cur: null, tgt: null, key: '', t: 0 };
+        function skyStep(now) {
+            var dt = SKY.t ? Math.min(.2, (now - SKY.t) / 1000) : 0; SKY.t = now;
+            if (SKY_DEMO) SKY_FORCE = ((now - T0) / 1000 * .8) % 24;
+            if (SKY_FORCE !== null || !SKY.tgt || now - SKY.last >= SKY_UPDATE_MS) {
+                var src = SKY_SOURCE === 'city' ? CITY : USER, d = new Date(), alt, morning = d.getHours() < 12;
+                if (SKY_FORCE !== null) { d.setHours(Math.floor(SKY_FORCE), Math.round((SKY_FORCE % 1) * 60) % 60, 0, 0); morning = SKY_FORCE < 12.7; }
+                if (typeof SunCalc !== 'undefined') { var p = SunCalc.getPosition(d, +src.lat, +src.lon); alt = p.altitude * 180 / Math.PI; morning = p.azimuth < 0; }
+                else alt = 45 * Math.sin(((d.getHours() + d.getMinutes() / 60) - 6) / 12 * Math.PI) - 8;
+                var kind = (SKY_SOURCE === 'city' ? WX.kind : (ENV.ready ? ENV.kind : 'sun')) || 'sun', tg = skyColorsAt(alt, kind);
+                SKY.tgt = tg; SKY.last = now; SKY.alt = alt;
+                var key = skyPhase(alt, morning) + '|' + kind + '|' + Math.round(alt / 4);
+                if (key !== SKY.key) { SKY.key = key; dbg('sky', 'маркер: небо (' + (SKY_SOURCE === 'city' ? 'місто на графіку' : 'місто користувача') + (SKY_FORCE !== null ? ', ТЕСТ ' + SKY_FORCE.toFixed(1) + ' год' : '') + ') висота сонця ' + alt.toFixed(1) + '°, фаза: ' + skyPhase(alt, morning) + ', верх rgb(' + tg.top.map(Math.round) + '), горизонт rgb(' + tg.hor.map(Math.round) + '), підкладка ' + tg.scrim.toFixed(2) + ' (SKY_MAX_LUM ' + SKY_MAX_LUM + '), погода: ' + kind + ' x' + SKY_WEATHER_MIX); }
+            }
+            if (!SKY.cur) SKY.cur = { top: SKY.tgt.top.slice(), hor: SKY.tgt.hor.slice(), scrim: SKY.tgt.scrim, night: SKY.tgt.night };
+            else { var k = SKY_FORCE !== null ? 1 : 1 - Math.exp(-dt / 3); SKY.cur.top = skyMixC(SKY.cur.top, SKY.tgt.top, k); SKY.cur.hor = skyMixC(SKY.cur.hor, SKY.tgt.hor, k); SKY.cur.scrim += (SKY.tgt.scrim - SKY.cur.scrim) * k; SKY.cur.night += (SKY.tgt.night - SKY.cur.night) * k; }
+        }
+        function skyRgb(c) { return 'rgb(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ')'; }
+
         function drawBg(f) {
             f = f || 1;
             var W = bgCanvas.width, H = bgCanvas.height, k = WX.kind || 'cloud', col = BG_COL[k], spd = BG_SPD[k] || 1, amp = k === 'sun' ? .16 : .26;
-            if (BG.last !== k) { dbg('bg', 'маркер: колір/швидкість фону змінено під погоду "' + k + '" (' + col + '), швидкість x' + spd); BG.last = k; }
+            if (!SKY_ON && BG.last !== k) { dbg('bg', 'маркер: колір/швидкість фону змінено під погоду "' + k + '" (' + col + '), швидкість x' + spd); BG.last = k; }
             bgCtx.clearRect(0, 0, W, H);
+            if (SKY_ON) {
+                skyStep(performance.now());
+                var sc = SKY.cur, gr = bgCtx.createLinearGradient(0, 0, 0, H);
+                gr.addColorStop(0, skyRgb(sc.top)); gr.addColorStop(1, skyRgb(sc.hor));
+                bgCtx.fillStyle = gr; bgCtx.fillRect(0, 0, W, H);
+                if (sc.scrim > .005) { bgCtx.fillStyle = 'rgba(6,10,18,' + sc.scrim.toFixed(3) + ')'; bgCtx.fillRect(0, 0, W, H); }
+                var bc = skyMixC(skyMixC(sc.hor, [255, 255, 255], .1), [120, 140, 200], sc.night * .35);
+                col = Math.round(bc[0]) + ',' + Math.round(bc[1]) + ',' + Math.round(bc[2]); amp = sc.night > .5 ? .2 : .14;
+            }
             BG.forEach(function (b) {
                 b.z += .0006 * spd * f; if (b.z > 1) { b.z = 0; b.x = Math.random() * 2 - 1; b.y = Math.random() * 2 - 1; }
                 var s = b.z, x = W / 2 + b.x * W * s * 1.1, y = H / 2 + b.y * H * s * 1.1, r = (.06 + s * .35) * W, a = Math.sin(Math.PI * s) * amp;
@@ -1968,7 +2060,7 @@
         var tbEl = document.getElementById('topbar'), chHead = document.querySelector('.chart-header'), tbHidden = false, chStuck = false;
         var chTop = TOPBAR_PIN ? 58 : 10;
         document.documentElement.style.setProperty('--chh-top', chTop + 'px');
-        if (TOPBAR_PIN) { tbEl.classList.add('tb-pinned'); dbg('topbar', 'маркер: верхню панель приклеєно (TOPBAR_PIN = true): завжди видима, підкладка без розмиття, липкий рядок графіка нижче на ' + chTop + ' px'); }
+        if (TOPBAR_PIN) { tbEl.classList.add('tb-pinned'); document.getElementById('tbBack').classList.add('on'); setTimeout(function () { ['atmoBtn', 'seasonSel', 'thunderBtn', 'tbVer'].forEach(function (id) { var e = document.getElementById(id), r = e.getBoundingClientRect(), cs = getComputedStyle(e); dbg('topbar', 'маркер: елемент панелі #' + id + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) + ' @(' + Math.round(r.left) + ',' + Math.round(r.top) + '), display=' + cs.display + ', visibility=' + cs.visibility + ', opacity=' + cs.opacity); }); }, 800); dbg('topbar', 'маркер: верхню панель приклеєно (TOPBAR_PIN = true): завжди видима, підкладка без розмиття, липкий рядок графіка нижче на ' + chTop + ' px'); }
         function onPageScroll() {
             var y = window.scrollY || document.documentElement.scrollTop || 0, hide = !TOPBAR_PIN && y > 40;
             if (hide !== tbHidden) {
